@@ -1,22 +1,27 @@
+# Set the library name
 set(COMPONENT_NAME master)
 
-add_executable(${COMPONENT_NAME}
-        main.cpp
+# Add the source files for the frontend component
+add_library(${COMPONENT_NAME} STATIC
+        echo_service.hpp
 )
 
-target_include_directories(${COMPONENT_NAME} PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/common
+# Specify include directories
+target_include_directories(${COMPONENT_NAME} PUBLIC
+        ${CMAKE_SOURCE_DIR}/protos
+        ${CMAKE_SOURCE_DIR}/src/master
 )
 
-target_link_libraries(${COMPONENT_NAME}
-        PRIVATE
+# Link dependencies
+target_link_libraries(${COMPONENT_NAME} PUBLIC
         echo_service_proto
         gRPC::grpc++
         gRPC::grpc++_reflection
+        protobuf::libprotobuf
 )
 
-# Set output directory
-set_target_properties(${COMPONENT_NAME}
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+add_executable(master_server main.cpp)
+target_link_libraries(master_server PRIVATE ${COMPONENT_NAME})
+set_target_properties(master_server PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )

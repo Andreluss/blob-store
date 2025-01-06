@@ -11,7 +11,7 @@ oraz to:
 
 Gdy mamy już docker to należy zbudować obraz deweloperski, jest skrypt dev.sh
 `./dev.sh buid-image`
-Może to zająć nawet >10 minut za pierwszym razem (pobiera i buduje gRPC from source w konterze)
+Może to zająć nawet >10 minut za pierwszym razem (instaluje wszystkie dependencies)
 
 ## Konfiguracja IDE
 W Clionie należy wejść w settings->Build,Execution,Deployment->Toolchains
@@ -23,8 +23,9 @@ container: /usr/src/app/build
 
 Reszta ustawień defaultowa.
 
-Następnie wejść w settings->Build,Execution,Deployment->CMake i stworzyć nowy profil. 
-Wybrać dla niego Build type: default, toolchain: nasz docker
+Następnie wejść w settings->Build,Execution,Deployment->CMake zmodyfikować profil. 
+Wybrać dla niego toolchain: nasz docker i dodać opcje CMake:
+`-B build -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake`
 
 Żeby sprawdzić czy wszystko działa to 
 1. Reload CMake Project w IDE
