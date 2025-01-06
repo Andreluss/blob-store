@@ -16,9 +16,11 @@ Może to zająć nawet >10 minut za pierwszym razem (instaluje wszystkie depende
 ## Konfiguracja IDE
 W Clionie należy wejść w settings->Build,Execution,Deployment->Toolchains
 i stwrozyć nowy toolchain Docker. Wybrać obraz blob-store, Container settings -> volumes i tutaj dodać dwie wartości:
-host: <nasz scieżka do projektu>/blob-store
+
+host: \<nasz scieżka do projektu\>/blob-store
 container: /usr/src/app
-host: <nasza scieżka do projektu>/blob-store/build
+
+host: \<nasza scieżka do projektu\>/blob-store/build
 container: /usr/src/app/build
 
 Reszta ustawień defaultowa.
