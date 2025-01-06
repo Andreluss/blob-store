@@ -20,6 +20,7 @@ protobuf_generate(TARGET echo_service_proto LANGUAGE cpp)
 protobuf_generate(TARGET echo_service_proto LANGUAGE grpc
         GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
         PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}"
+        PLUGIN_OPTIONS generate_mock_code=true
 )
 
 # Make the generated files available to dependents

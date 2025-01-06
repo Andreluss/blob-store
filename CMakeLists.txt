@@ -13,6 +13,7 @@ find_package(gRPC CONFIG REQUIRED)
 option(BUILD_FRONTEND "Build frontend component" ON)
 option(BUILD_MASTER "Build master component" ON)
 option(BUILD_WORKER "Build worker component" ON)
+OPTION(ENABLE_TESTS "Builds tests" ON)
 
 # Add proto files first as they generate headers needed by other components
 add_subdirectory(protos)
@@ -29,3 +30,12 @@ endif()
 if(BUILD_WORKER)
     add_subdirectory(src/worker)
 endif()
+
+if(ENABLE_TESTS)
+    enable_testing()
+    # Include GTest
+    find_package(GTest CONFIG REQUIRED)
+
+    add_subdirectory(tests)
+endif()
+

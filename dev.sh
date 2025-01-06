@@ -19,6 +19,7 @@ show_help() {
     echo "  run-fe      - Run the frontend service"
     echo "  run-master  - Run the master service"
     echo "  run-worker  - Run the worker service"
+    echo "  test        - Run tests"
     echo "  clean       - Clean build directory"
     echo "  help        - Show this help message"
 }
@@ -87,6 +88,13 @@ run_worker() {
     ./build/bin/worker
 }
 
+run_tests() {
+    docker run --rm -it \
+        -v $(pwd):${WORKDIR_PATH} \
+        -v $(pwd)/build:${WORKDIR_PATH}/build \
+        ${PROJECT_NAME} sh -c "cd build && ctest"
+}
+
 # Parse command
 case "$1" in
     "shell")
@@ -112,6 +120,9 @@ case "$1" in
         ;;
     "run-worker")
         run_worker
+        ;;
+    "test")
+        run_tests
         ;;
     "help"|"")
         show_help
