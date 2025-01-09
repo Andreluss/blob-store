@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package master;
+
+import "common.proto";
+
+service MasterService {
+  rpc Healthcheck (HealthcheckRequest) returns (HealthcheckResponse) {}
+  rpc GetWorkersToSaveBlob (GetWorkersToSaveBlobRequest) returns (GetWorkersToSaveBlobResponse) {}
+  rpc NotifyBlobSaved (NotifyBlobSavedRequest) returns (NotifyBlobSavedResponse) {}
+  rpc GetWorkerWithBlob (GetWorkerWithBlobRequest) returns (GetWorkerWithBlobResponse) {}
+  rpc DeleteBlob (DeleteBlobRequest) returns (DeleteBlobResponse) {}
+}
+
+message HealthcheckRequest {}
+
+message HealthcheckResponse {
+  string message = 1;
+}
+
+// Message send by front end to get workers IPs and ports
+message GetWorkersToSaveBlobRequest {
+  string blobId = 1;
+}
+
+message GetWorkersToSaveBlobResponse {
+  bool success = 1;
+  string message = 2;  // Place for eventual error messages
+  repeated common.ipv4Address addresses = 3; // repeated = array
+}
+
+// Message send by worker to notify successful saving of blob
+message NotifyBlobSavedRequest {
+  string workderId = 1;
+  string blobId = 2;
+}
+
+message NotifyBlobSavedResponse {}
+
+// Message send by frontend to get address of worker with specific blob
+message GetWorkerWithBlobRequest {
+  string blobId = 1;
+}
+
+message GetWorkerWithBlobResponse {
+  bool success = 1;
+  string message = 2;  // Place for eventual error messages
+  common.ipv4Address addresses = 3;
+}
+
+// Message send by frontend to request deletion of a blob
+message DeleteBlobRequest {
+  string blobId = 1;
+}
+
+message DeleteBlobResponse {
+  bool success = 1;
+  string message = 2;   // Place for eventual error messages
+}
