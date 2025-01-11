@@ -4,6 +4,7 @@ set(COMPONENT_NAME master)
 # Add the source files for the frontend component
 add_library(${COMPONENT_NAME} STATIC
         echo_service.hpp
+        master_service.hpp
 )
 
 # Specify include directories
@@ -14,7 +15,7 @@ target_include_directories(${COMPONENT_NAME} PUBLIC
 
 # Link dependencies
 target_link_libraries(${COMPONENT_NAME} PUBLIC
-        echo_service_proto
+        proto_lib
         gRPC::grpc++
         gRPC::grpc++_reflection
         protobuf::libprotobuf

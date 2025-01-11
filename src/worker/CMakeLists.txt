@@ -10,7 +10,7 @@ target_include_directories(${COMPONENT_NAME} PRIVATE
 
 target_link_libraries(${COMPONENT_NAME}
         PRIVATE
-        echo_service_proto
+        proto_lib
         gRPC::grpc++
         gRPC::grpc++_reflection
 )

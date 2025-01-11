@@ -49,7 +49,7 @@ build() {
         -v $(pwd):${WORKDIR_PATH} \
         -v $(pwd)/build:${WORKDIR_PATH}/build \
         ${PROJECT_NAME} \
-        bash -c "cmake -B build -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake && cmake --build build"
+        bash -c "cmake -B build -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake && cmake --build build && chmod 777 -R ${WORKDIR_PATH}"
 }
 
 # Clean build
