@@ -1,17 +1,28 @@
 syntax = "proto3";
 
+package frontend;
+
+import "common.proto";
+
 service Frontend {
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+  rpc UploadBlob (stream UploadBlobRequest) returns (UploadBlobResponse) {}
 
-  rpc SayHelloStreamReply (HelloRequest) returns (stream HelloReply) {}
-
-  rpc SayHelloBidiStream (stream HelloRequest) returns (stream HelloReply) {}
 }
 
-message HelloRequest {
-  string name = 1;
+// Client sends stream of these messages to frontend:
+// [blob_info] [chunk_0/2] [chunk_1/2] [chunk_2/2]
+message UploadBlobRequest {
+  oneof data {
+    BlobInfo info = 1;
+    bytes chunk_data = 2;
+  }
 }
 
-message HelloReply {
-  string message = 1;
+message BlobInfo {
+  uint64 size_bytes = 1;
+  optional string name = 2;
+}
+
+message UploadBlobResponse {
+  string upload_result = 1;
 }
