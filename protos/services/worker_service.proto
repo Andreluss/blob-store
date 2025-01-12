@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package worker;
+
+import "common.proto";
+
+service WorkerService {
+  rpc Healthcheck (HealthcheckRequest) returns (HealthcheckResponse) {}
+  rpc GetFreeStorage (GetFreeStorageRequest) returns (GetFreeStorageResponse) {}
+  rpc SaveBlob (SaveBlobRequest) returns (SaveBlobResponse) {}
+  rpc GetBlob (GetBlobRequest) returns (GetBlobResponse) {}
+  rpc DeleteBlob (DeleteBlobRequest) returns (DeleteBlobResponse) {}
+}
+
+message HealthcheckRequest {}
+
+message HealthcheckResponse {
+  string message = 1;
+}
+
+message GetFreeStorageRequest {}
+
+message GetFreeStorageResponse {
+    uint64 storage = 1;
+}
+
+message SaveBlobRequest {
+    uint64 hash = 1;
+    uint64 size_bytes = 2;
+    bytes chunk_data = 3;
+}
+
+message SaveBlobResponse {
+    string message = 1;
+}
+
+message GetBlobRequest {
+    uint64 hash = 1;
+}
+
+message GetBlobResponse {
+    uint64 size_bytes = 1;
+    bytes chunk_data = 2;
+}
+
+message DeleteBlobRequest {
+    uint64 hash = 1;
+}
+
+message DeleteBlobResponse {
+    string message = 1;
+}
