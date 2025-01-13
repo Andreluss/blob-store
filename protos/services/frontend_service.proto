@@ -6,7 +6,7 @@ import "common.proto";
 
 service Frontend {
   rpc UploadBlob (stream UploadBlobRequest) returns (UploadBlobResponse) {}
-
+  // TODO Andrzej: Dodaj proszę metody GetBlob / DeleteBlob i opcjonalnie jakiś healthcheck
 }
 
 // Client sends stream of these messages to frontend:
