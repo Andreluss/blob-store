@@ -7,10 +7,8 @@ import "common.proto";
 service WorkerService {
   rpc Healthcheck (HealthcheckRequest) returns (HealthcheckResponse) {}
   rpc GetFreeStorage (GetFreeStorageRequest) returns (GetFreeStorageResponse) {}
-  // TODO Mateusz: SaveBlob chyba powinno przyjować stream, nie prześlemy całego w jednej wiadomości
-  rpc SaveBlob (SaveBlobRequest) returns (SaveBlobResponse) {}
-  // TODO Mateusz: GetBlob chyba powinno zwracać stream
-  rpc GetBlob (GetBlobRequest) returns (GetBlobResponse) {}
+  rpc SaveBlob (stream SaveBlobRequest) returns (SaveBlobResponse) {}
+  rpc GetBlob (GetBlobRequest) returns (stream GetBlobResponse) {}
   rpc DeleteBlob (DeleteBlobRequest) returns (DeleteBlobResponse) {}
 }
 
@@ -27,8 +25,7 @@ message GetFreeStorageResponse {
 }
 
 message SaveBlobRequest {
-  // TODO MAteusz hash chyba jako string będzie, czy 64 bity wystarczą?
-    uint64 hash = 1;
+    string hash = 1;
     uint64 size_bytes = 2;
     bytes chunk_data = 3;
 }
@@ -47,7 +44,7 @@ message GetBlobResponse {
 }
 
 message DeleteBlobRequest {
-    uint64 hash = 1;
+    string hash = 1;
 }
 
 message DeleteBlobResponse {
