@@ -6,7 +6,9 @@ import "common.proto";
 
 service Frontend {
   rpc UploadBlob (stream UploadBlobRequest) returns (UploadBlobResponse) {}
-  // TODO Andrzej: Dodaj proszę metody GetBlob / DeleteBlob i opcjonalnie jakiś healthcheck
+  rpc GetBlob (GetBlobRequest) returns (stream GetBlobResponse) {}
+  rpc DeleteBlob (DeleteBlobRequest) returns (DeleteBlobResponse) {}
+  rpc HealthCheck (HealthcheckRequest) returns (HealthcheckResponse) {}
 }
 
 // Client sends stream of these messages to frontend:
@@ -25,4 +27,29 @@ message BlobInfo {
 
 message UploadBlobResponse {
   string upload_result = 1;
+}
+
+message GetBlobRequest {
+  string hash = 1;
+}
+
+message GetBlobResponse {
+  oneof data {
+    BlobInfo info = 1;
+    bytes chunk_data = 2;
+  }
+}
+
+message DeleteBlobRequest {
+  string hash = 1;
+}
+
+message DeleteBlobResponse {
+  string delete_result = 1;
+}
+
+message HealthcheckRequest {}
+
+message HealthcheckResponse {
+  string message = 1;
 }
