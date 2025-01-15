@@ -10,7 +10,6 @@
 #include "services/worker_service.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
-
 const std::string BLOBS_PATH = "blobs/";
 const uint64_t MAX_CHUNK_SIZE = 1024 * 1024;
 
@@ -18,6 +17,9 @@ const uint64_t MAX_CHUNK_SIZE = 1024 * 1024;
 class WorkerServiceImpl final : public worker::WorkerService::Service {
 public:
     WorkerServiceImpl() {
+        // TODO Mateusz: Robienie jakichkolwiek operacji na plikach w konstruktorze to code smell, albo dodać metodę do inicjalizacji,
+        //  albo przyjąć w tej klasie założenie że te foldery są zainicjalizowane
+        //  (I zrobić inicjalizacje w miejscu w którym będziemy korzystać z WorkerServiceImpl).
         try {
             if (std::filesystem::exists(BLOBS_PATH)) {
                 std::cout << "Directory already exists: " << BLOBS_PATH << '\n';
@@ -81,6 +83,10 @@ public:
                 return grpc::Status::CANCELLED;
             }
         }
+        // TODO Mateusz: wywołać master NotifyBlobSaved po udanym zapisie
+        // TODO Mateusz: co jeśli stream z fragmentami pliku się urwie w połowie?
+        //  Trzeba pewnie usunąć to co do tej pory zapisaliśmy
+        //  Myślę że warto żeby sam worker policzył hash pliku i sprawdził czy zgadza się z tym co było w requeście
 
         response->set_message("OK");
         return grpc::Status::OK;
@@ -116,6 +122,7 @@ public:
             response->set_message("OK");
             return grpc::Status::OK;
         } else {
+            // TODO Mateusz: Dobrze byłoby mieć info czy plik nie istniał, czy istniał ale był błąd przy odczycie
             response->set_message("Error while deleting file.");
             return grpc::Status::CANCELLED;
         }
