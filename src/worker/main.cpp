@@ -10,15 +10,20 @@
 using namespace std;
 
 int main() {
-    std::string server_address("0.0.0.0:50051");
-    WorkerServiceImpl service;
+    const std::string server_address("0.0.0.0:50051");
+    const std::string master_address = "127.0.0.1:50052";
+
+    auto master_channel = grpc::CreateChannel(master_address,
+                                              grpc::InsecureChannelCredentials());
+
+    WorkerServiceImpl worker_service(master_channel);
 
     grpc::ServerBuilder builder;
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
+    builder.RegisterService(&worker_service);
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << server_address << std::endl;
+    std::cout << "Worker service is running on " << server_address << std::endl;
     server->Wait();
 
     return 0;

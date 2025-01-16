@@ -8,30 +8,19 @@
 #include <filesystem>
 #include <fstream>
 #include "services/worker_service.grpc.pb.h"
+#include "services/master_service.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
+// We assume that blobs are stored in the blobs/ directory which is created in the same
+// directory as the executable.
 const std::string BLOBS_PATH = "blobs/";
 const uint64_t MAX_CHUNK_SIZE = 1024 * 1024;
 
 
 class WorkerServiceImpl final : public worker::WorkerService::Service {
 public:
-    WorkerServiceImpl() {
-        // TODO Mateusz: Robienie jakichkolwiek operacji na plikach w konstruktorze to code smell, albo dodać metodę do inicjalizacji,
-        //  albo przyjąć w tej klasie założenie że te foldery są zainicjalizowane
-        //  (I zrobić inicjalizacje w miejscu w którym będziemy korzystać z WorkerServiceImpl).
-        try {
-            if (std::filesystem::exists(BLOBS_PATH)) {
-                std::cout << "Directory already exists: " << BLOBS_PATH << '\n';
-            } else if (std::filesystem::create_directories(BLOBS_PATH)) {
-                std::cout << "Directory created successfully: " << BLOBS_PATH << '\n';
-            } else {
-                std::cerr << "Failed to create directory: " << BLOBS_PATH << '\n';
-            }
-        } catch (const std::filesystem::filesystem_error &e) {
-            std::cerr << "Error: " << e.what() << '\n';
-        }
-    }
+    explicit WorkerServiceImpl(const std::shared_ptr<grpc::Channel>& channel)
+            : master_stub_(master::MasterService::NewStub(channel)) {}
 
     grpc::Status Healthcheck(
             grpc::ServerContext *context,
@@ -46,7 +35,7 @@ public:
             const worker::GetFreeStorageRequest *request,
             worker::GetFreeStorageResponse *response) override {
         auto [status, storage] = get_free_storage();
-        if (status == RetCode::ERROR) {
+        if (status == RetCode::ERROR_FILESYSTEM) {
             response->set_message("Error while getting free storage.");
             return grpc::Status::CANCELLED;
         }
@@ -62,11 +51,12 @@ public:
 
         worker::SaveBlobRequest request;
         bool created_file = false;
+        std::string calculated_hash;
 
         auto create_file_if_needed = [&](const std::string &filename) -> RetCode {
             if (not created_file) {
-                if (tryCreateBlobFile(filename) == RetCode::ERROR) {
-                    return RetCode::ERROR;
+                if (not try_create_blob_file(filename)) {
+                    return RetCode::ERROR_FILESYSTEM;
                 }
                 created_file = true;
             }
@@ -74,22 +64,47 @@ public:
         };
 
         while (reader->Read(&request)) {
-            if (create_file_if_needed(request.hash()) == RetCode::ERROR) {
+            if (create_file_if_needed(request.hash()) == RetCode::ERROR_FILESYSTEM) {
                 response->set_message("Error while creating file.");
                 return grpc::Status::CANCELLED;
             }
-            if (append_to_file(request.hash(), request.chunk_data()) == RetCode::ERROR) {
+
+            calculated_hash = recalculate_hash(request.chunk_data(), calculated_hash);
+
+            if (append_to_file(request.hash(), request.chunk_data()) == RetCode::ERROR_FILESYSTEM) {
                 response->set_message("Error appending bytes to file.");
+                delete_file(request.hash());
                 return grpc::Status::CANCELLED;
             }
         }
-        // TODO Mateusz: wywołać master NotifyBlobSaved po udanym zapisie
-        // TODO Mateusz: co jeśli stream z fragmentami pliku się urwie w połowie?
-        //  Trzeba pewnie usunąć to co do tej pory zapisaliśmy
-        //  Myślę że warto żeby sam worker policzył hash pliku i sprawdził czy zgadza się z tym co było w requeście
 
-        response->set_message("OK");
-        return grpc::Status::OK;
+        if (calculated_hash != request.hash()) {
+            response->set_message("Error: Hash mismatch.");
+            return grpc::Status::CANCELLED;
+        }
+
+        auto notify_master = [&]() -> grpc::Status {
+            master::NotifyBlobSavedRequest notify_request;
+            notify_request.set_workderid("workerId");
+            notify_request.set_blobid(request.hash());
+
+            grpc::ClientContext client_context;
+            master::NotifyBlobSavedResponse notify_response;
+
+            auto status = master_stub_->NotifyBlobSaved(&client_context, notify_request,
+                                                      &notify_response);
+            if (!status.ok()) {
+                std::cerr << "Error: " << status.error_message() << '\n';
+                response->set_message("Error notifying master.");
+                return grpc::Status::CANCELLED;
+            }
+            else {
+                response->set_message("OK");
+                return grpc::Status::OK;
+            }
+        };
+
+        return notify_master();
     }
 
     grpc::Status GetBlob(
@@ -118,22 +133,38 @@ public:
             grpc::ServerContext *context,
             const worker::DeleteBlobRequest *request,
             worker::DeleteBlobResponse *response) override {
-        if (delete_file(request->hash()) == RetCode::SUCCESS) {
-            response->set_message("OK");
-            return grpc::Status::OK;
-        } else {
-            // TODO Mateusz: Dobrze byłoby mieć info czy plik nie istniał, czy istniał ale był błąd przy odczycie
-            response->set_message("Error while deleting file.");
-            return grpc::Status::CANCELLED;
+        auto return_code = delete_file(request->hash());
+
+        switch (return_code) {
+            case RetCode::SUCCESS:
+                response->set_message("OK");
+                return grpc::Status::OK;
+            case RetCode::ERROR_FILE_NOT_FOUND:
+                response->set_message("Error: File not found.");
+                return grpc::Status::CANCELLED;
+            case RetCode::ERROR_FILESYSTEM:
+                response->set_message("Error: Filesystem error.");
+                return grpc::Status::CANCELLED;
+            default:
+                response->set_message("Error: Unknown error.");
+                return grpc::Status::CANCELLED;
         }
     }
 
 private:
+    std::unique_ptr<master::MasterService::Stub> master_stub_;
+
     enum RetCode {
         SUCCESS,
-        ERROR,
-        FINISHED
+        FINISHED,
+        ERROR_FILE_NOT_FOUND,
+        ERROR_FILESYSTEM,
     };
+
+    static std::string recalculate_hash(const std::string &data, const std::string &previous_hash) {
+        // TODO: Decide how we want to calculate hash.
+        return previous_hash;
+    }
 
     static std::pair<RetCode, uint64_t> get_free_storage() {
         try {
@@ -141,11 +172,11 @@ private:
             return {RetCode::SUCCESS, (uint64_t) space.free};
         } catch (const std::filesystem::filesystem_error &e) {
             std::cerr << "Error: " << e.what() << '\n';
-            return {RetCode::ERROR, uint64_t(0)};
+            return {RetCode::ERROR_FILESYSTEM, uint64_t(0)};
         }
     }
 
-    static bool tryCreateBlobFile(const std::string &hash) {
+    static bool try_create_blob_file(const std::string &hash) {
         auto filepath = BLOBS_PATH + hash;
 
         std::ofstream outfile(filepath, std::ios::out);
@@ -163,7 +194,7 @@ private:
         std::ofstream outfile(filepath, std::ios::binary | std::ios::app);
         if (!outfile) {
             std::cerr << "Error: Unable to open file for appending: " << filepath << '\n';
-            return RetCode::ERROR;
+            return RetCode::ERROR_FILESYSTEM;
         }
         outfile.write(data.c_str(), (ssize_t) data.size());
         outfile.close();
@@ -179,7 +210,7 @@ private:
         std::ifstream infile(filepath, std::ios::binary);
         if (!infile) {
             std::cerr << "Error: Unable to open file for reading: " << filepath << '\n';
-            return RetCode::ERROR;
+            return RetCode::ERROR_FILESYSTEM;
         }
 
         infile.seekg((ssize_t)already_sent, std::ios::beg);
@@ -205,11 +236,11 @@ private:
                 std::filesystem::remove(filepath);
             } else {
                 std::cerr << "Error: File does not exist: " << filepath << '\n';
-                return RetCode::ERROR;
+                return RetCode::ERROR_FILE_NOT_FOUND;
             }
         } catch (const std::filesystem::filesystem_error &e) {
             std::cerr << "Filesystem error: " << e.what() << '\n';
-            return RetCode::ERROR;
+            return RetCode::ERROR_FILESYSTEM;
         }
 
         return RetCode::SUCCESS;
