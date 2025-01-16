@@ -19,6 +19,7 @@ target_link_libraries(${COMPONENT_NAME} PUBLIC
         gRPC::grpc++
         gRPC::grpc++_reflection
         protobuf::libprotobuf
+        ${Boost_LIBRARIES}
 )
 
 add_executable(master_server main.cpp)
