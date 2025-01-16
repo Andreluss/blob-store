@@ -7,15 +7,13 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include "google/cloud/spanner/client.h"
 #include <iostream>
 
 class MasterServiceImpl final : public master::MasterService::Service {
 public:
-    boost::uuids::random_generator generator;
-    MasterServiceImpl()
-    {
-        boost::uuids::uuid uuid = generator();
-    }
+    boost::uuids::random_generator uuidGenerator;
+    MasterServiceImpl();
     grpc::Status GetWorkersToSaveBlob(
         grpc::ServerContext* context,
         const master::GetWorkersToSaveBlobRequest* request,
@@ -35,6 +33,7 @@ public:
         const master::NotifyBlobSavedRequest* request,
         master::NotifyBlobSavedResponse* response) override
     {
+        boost::uuids::uuid blobCopyUuid = uuidGenerator();
         return grpc::Status::CANCELLED;
     }
 private:

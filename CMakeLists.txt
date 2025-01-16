@@ -8,7 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find required packages
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system filesystem)
+find_package(Boost REQUIRED COMPONENTS uuid)
+find_package(google_cloud_cpp_spanner REQUIRED)
 
 # Option to build specific components
 option(BUILD_FRONTEND "Build frontend component" ON)

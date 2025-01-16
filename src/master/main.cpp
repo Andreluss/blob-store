@@ -1,4 +1,5 @@
 #include "echo_service.hpp"
+#include "master_service.hpp"
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <iostream>

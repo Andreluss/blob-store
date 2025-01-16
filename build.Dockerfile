@@ -27,10 +27,11 @@ RUN vcpkg install grpc:x64-linux protobuf:x64-linux
 # Install gtest
 RUN vcpkg install gtest:x64-linux
 
+# Install google clout client libraries
+RUN vcpkg install google-cloud-cpp[core,spanner]
+
 # Install boost
-RUN apt-get update && apt-get install -y \
-    libboost-all-dev \
-    && apt-get clean
+RUN vcpkg install boost-uuid
 
 # Set up working directory
 ARG workdir
