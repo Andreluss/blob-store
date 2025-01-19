@@ -38,6 +38,7 @@ target_link_libraries(${COMPONENT_NAME} PUBLIC
         google-cloud-cpp::spanner
         Boost::uuid
         master_db_repo
+        common_lib
 )
 
 add_executable(master_server main.cpp)

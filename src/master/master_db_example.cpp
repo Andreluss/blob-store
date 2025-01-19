@@ -13,12 +13,18 @@ int main() {
             "blob-store-main",
             "app-master"
         );
+        db.addWorkerState(WorkerStateDTO("xd", "xd2", 1, 2, 3));
+        db.addWorkerState(WorkerStateDTO("xd2", "xd2", 1, 2, 3));
+        auto res = db.getWorkerState("xd");
+        db.deleteWorkerState("xd");
+        db.deleteWorkerState("xd2");
+        std::cout << res.worker_id << " " << res.ip_address;
 
-        db.addEntry("123e4567-e89b-12d3-a456-426614174000",
+        db.addBlobEntry(BlobCopyDTO("123e4567-e89b-12d3-a456-426614174000",
                    "hash123",
-                   "worker123");
+                   "worker123"));
 
-        auto results = db.queryByHash("hash123");
+        auto results = db.queryBlobByHash("hash123");
         for (const auto& [uuid, hash, worker_id] : results) {
             std::cout << "UUID: " << uuid
                      << ", Hash: " << hash
@@ -26,7 +32,7 @@ int main() {
         }
 
         // Example: Delete entry
-        bool deleted = db.deleteEntry(
+        bool deleted = db.deleteBlobEntry(
             "123e4567-e89b-12d3-a456-426614174000");
         if (deleted) {
             std::cout << "Entry deleted successfully" << std::endl;

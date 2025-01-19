@@ -34,3 +34,8 @@ Wybrać dla niego toolchain: nasz docker i dodać opcje CMake:
 2. Wejść w src/master/main.cpp
 3. Zbuildować go za pomocą IDE (lub uruchomić)
 4. Po tych krokach IDE nie powinno podświetlać niczego na czerwono w kodzie, a program powinien się uruchamiać.
+
+## Spanner
+Aplikacja wykorzystuje Application Default Credentials przy połączeniu do Spannera.
+Tutaj opis jak zasetupować: https://cloud.google.com/docs/authentication/set-up-adc-local-dev-environment
+Na razie schemat bazy danych wyklikałem ręcznie i jest na moim koncie (Mateusz J).

@@ -26,15 +26,12 @@ MasterDbRepository::MasterDbRepository (
 }
 
     // Method to add new entry
-bool MasterDbRepository::addEntry(const std::string& uuid,
-             const std::string& hash,
-             const std::string& worker_id) const
-{
+bool MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) const {
     try {
         auto mutation = spanner::InsertMutationBuilder(
             "blob_copy",
             {"uuid", "hash", "worker_id"})
-            .EmplaceRow(uuid, hash, worker_id)
+            .EmplaceRow(entry.uuid, entry.hash, entry.worker_id)
             .Build();
 
         auto commit_result = client->Commit(
@@ -51,8 +48,8 @@ bool MasterDbRepository::addEntry(const std::string& uuid,
 }
 
     // Method to query entries by hash
-std::vector<std::tuple<std::string, std::string, std::string>> MasterDbRepository::queryByHash(const std::string& hash) {
-    std::vector<std::tuple<std::string, std::string, std::string>> results;
+std::vector<BlobCopyDTO> MasterDbRepository::queryBlobByHash(const std::string& hash) const {
+    std::vector<BlobCopyDTO> results;
     try {
         auto query = spanner::SqlStatement(
             "SELECT uuid, hash, worker_id FROM blob_copy "
@@ -68,9 +65,8 @@ std::vector<std::tuple<std::string, std::string, std::string>> MasterDbRepositor
 
             std::string uuid, hash, worker_id;
             uuid = std::get<0>(*row);
-            hash = std::get<0>(*row);
-            worker_id = std::get<0>(*row);
-
+            hash = std::get<1>(*row);
+            worker_id = std::get<2>(*row);
             results.emplace_back(uuid, hash, worker_id);
         }
     } catch (const std::exception& e) {
@@ -81,8 +77,7 @@ std::vector<std::tuple<std::string, std::string, std::string>> MasterDbRepositor
 }
 
 // Method to delete entry by UUID
-bool MasterDbRepository::deleteEntry(const std::string& uuid) const
-{
+bool MasterDbRepository::deleteBlobEntry(const std::string& uuid) const {
     try {
         auto mutation = spanner::DeleteMutationBuilder(
             "blob_copy",
@@ -103,3 +98,63 @@ bool MasterDbRepository::deleteEntry(const std::string& uuid) const
     }
 }
 
+bool MasterDbRepository::addWorkerState(const WorkerStateDTO& worker_state) const {
+    try {
+        auto mutation = spanner::InsertMutationBuilder( "worker_state", {"worker_id",
+            "ip_address", "available_space_mb", "locked_space_mb", "last_heartbeat_epoch_ts"})
+            .EmplaceRow(worker_state.worker_id, worker_state.ip_address, worker_state.available_space_mb,
+                        worker_state.locked_space_mb, worker_state.last_heartbeat_epoch_ts).Build();
+        auto commit_result = client->Commit(spanner::Mutations{mutation});
+        return commit_result.ok();
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+bool MasterDbRepository::updateWorkerState(const WorkerStateDTO& worker_state) const {
+    try {
+        auto mutation = spanner::UpdateMutationBuilder(
+            "worker_state",
+            {"worker_id", "ip_address", "available_space_mb", "locked_space_mb", "last_heartbeat_epoch_ts"})
+        .EmplaceRow(worker_state.worker_id, worker_state.ip_address, worker_state.available_space_mb,
+                    worker_state.locked_space_mb, worker_state.last_heartbeat_epoch_ts).Build();
+        auto commit_result = client->Commit(spanner::Mutations{mutation});
+        return commit_result.ok();
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+bool MasterDbRepository::deleteWorkerState(const std::string& worker_id) const {
+    try {
+        auto mutation = spanner::DeleteMutationBuilder("worker_state", spanner::KeySet().AddKey(
+            spanner::MakeKey(worker_id))).Build();
+        auto commit_result = client->Commit(spanner::Mutations{mutation});
+        return commit_result.ok();
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+WorkerStateDTO MasterDbRepository::getWorkerState(const std::string& worker_id) const {
+    auto query = spanner::SqlStatement(
+        "SELECT worker_id, ip_address, available_space_mb, locked_space_mb, last_heartbeat_epoch_ts "
+        "FROM worker_state "
+        "WHERE worker_id = $1",
+        {{"p1", spanner::Value(worker_id)}});
+
+    auto rows = client->ExecuteQuery(query);
+    auto stream = spanner::StreamOf<std::tuple<std::string, std::string, int64_t, int64_t, int64_t>>(rows);
+    for (auto const& row : stream)
+    {
+        if (!row) throw std::runtime_error(row.status().message());
+        return WorkerStateDTO{
+            std::get<0>(*row),
+            std::get<1>(*row),
+            std::get<2>(*row),
+            std::get<3>(*row),
+            std::get<4>(*row)
+        };
+    }
+    throw std::runtime_error("Error: No worker state exists with given id");
+}
