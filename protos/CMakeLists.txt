@@ -3,6 +3,7 @@ set(PROTO_FILES
         services/echo_service.proto
         services/frontend_service.proto
         services/master_service.proto
+        services/worker_service.proto
         common.proto
 )
 
