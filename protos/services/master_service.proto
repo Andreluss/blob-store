@@ -21,6 +21,7 @@ message HealthcheckResponse {
 // Message send by front end to get workers IPs and ports
 message GetWorkersToSaveBlobRequest {
   string blobId = 1;
+  uint64 sizeMb = 2;
 }
 
 message GetWorkersToSaveBlobResponse {

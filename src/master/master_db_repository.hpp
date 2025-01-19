@@ -8,14 +8,14 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <tuple>
 #include <memory>
 
 namespace spanner = ::google::cloud::spanner;
 
 struct BlobCopyDTO {
-    std::string uuid, hash, worker_id;
-    BlobCopyDTO(std::string  uuid, std::string hash, std::string worker_id) : uuid(std::move(uuid)), hash(std::move(hash)), worker_id(std::move(worker_id)) {}
+    std::string uuid, hash, worker_id, state;
+    BlobCopyDTO(std::string  uuid, std::string hash, std::string worker_id, std::string state) :
+        uuid(std::move(uuid)), hash(std::move(hash)), worker_id(std::move(worker_id)), state(std::move(state)) {}
 };
 
 struct WorkerStateDTO {
@@ -57,6 +57,7 @@ public:
     bool updateWorkerState(const WorkerStateDTO& worker_state) const;
     bool deleteWorkerState(const std::string& worker_id) const;
     WorkerStateDTO getWorkerState(const std::string& worker_id) const;
+    std::vector<WorkerStateDTO> getWorkersWithFreeSpace(int64_t spaceNeeded, int32_t num_workers) const;
 
 private:
     std::shared_ptr<spanner::Client> client;

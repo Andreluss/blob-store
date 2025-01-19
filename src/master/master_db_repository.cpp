@@ -30,8 +30,8 @@ bool MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) const {
     try {
         auto mutation = spanner::InsertMutationBuilder(
             "blob_copy",
-            {"uuid", "hash", "worker_id"})
-            .EmplaceRow(entry.uuid, entry.hash, entry.worker_id)
+            {"uuid", "hash", "worker_id", "state"})
+            .EmplaceRow(entry.uuid, entry.hash, entry.worker_id, entry.state)
             .Build();
 
         auto commit_result = client->Commit(
@@ -52,22 +52,24 @@ std::vector<BlobCopyDTO> MasterDbRepository::queryBlobByHash(const std::string& 
     std::vector<BlobCopyDTO> results;
     try {
         auto query = spanner::SqlStatement(
-            "SELECT uuid, hash, worker_id FROM blob_copy "
+            "SELECT uuid, hash, worker_id, state FROM blob_copy "
             "WHERE hash = $1",
             {{"p1", spanner::Value(hash)}});
 
         auto rows = client->ExecuteQuery(query);
 
-        for (auto const& row : spanner::StreamOf<std::tuple<std::string, std::string, std::string>>(rows)) {
+        using rowType = std::tuple<std::string, std::string, std::string, std::string>;
+        for (auto const& row : spanner::StreamOf<rowType>(rows)) {
             if (!row) {
                 throw std::runtime_error(row.status().message());
             }
 
-            std::string uuid, hash, worker_id;
+            std::string uuid, hash, worker_id, state;
             uuid = std::get<0>(*row);
             hash = std::get<1>(*row);
             worker_id = std::get<2>(*row);
-            results.emplace_back(uuid, hash, worker_id);
+            state = std::get<3>(*row);
+            results.emplace_back(uuid, hash, worker_id, state);
         }
     } catch (const std::exception& e) {
         std::cerr << "Error querying entries: " << e.what() << std::endl;
@@ -157,4 +159,34 @@ WorkerStateDTO MasterDbRepository::getWorkerState(const std::string& worker_id) 
         };
     }
     throw std::runtime_error("Error: No worker state exists with given id");
+}
+
+std::vector<WorkerStateDTO> MasterDbRepository::getWorkersWithFreeSpace(int64_t spaceNeeded, int32_t num_workers) const {
+    auto query = spanner::SqlStatement(
+        "SELECT worker_id, ip_address, available_space_mb, locked_space_mb, last_heartbeat_epoch_ts "
+        "FROM worker_state "
+        "WHERE available_space_mb - locked_space_mb >= $1"
+        "LIMIT $2",
+        {{"p1", spanner::Value(spaceNeeded)}, {"p2", spanner::Value(num_workers)}});
+
+    auto rows = client->ExecuteQuery(query);
+    auto stream = spanner::StreamOf<std::tuple<std::string, std::string, int64_t, int64_t, int64_t>>(rows);
+    std::vector<WorkerStateDTO> result;
+    for (auto const& row : stream)
+    {
+        if (!row) throw std::runtime_error(row.status().message());
+        result.emplace_back(
+            std::get<0>(*row),
+            std::get<1>(*row),
+            std::get<2>(*row),
+            std::get<3>(*row),
+            std::get<4>(*row)
+        );
+    }
+    if (result.size() < num_workers)
+    {
+        throw std::runtime_error("Error: requested " + std::to_string(num_workers) + " workers, but only "
+                                    + std::to_string(result.size()) + " workers matching the criteria exist");
+    }
+    return result;
 }
