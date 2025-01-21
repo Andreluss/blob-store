@@ -21,7 +21,8 @@ message HealthcheckResponse {
 message GetFreeStorageRequest {}
 
 message GetFreeStorageResponse {
-    uint64 storage = 1;
+  string message = 1;
+  uint64 storage = 2;
 }
 
 message SaveBlobRequest {
@@ -35,7 +36,7 @@ message SaveBlobResponse {
 }
 
 message GetBlobRequest {
-    uint64 hash = 1;
+    string hash = 1;
 }
 
 message GetBlobResponse {

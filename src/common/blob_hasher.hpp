@@ -24,6 +24,7 @@ public:
     }
 };
 
-// TODO-soon: implement hashing with:
-// a) SHA-256 using OpenSSL or Crypto++ library
-// b) xxHash (faster, non-cryptographic, more collisions): https://github.com/Cyan4973/xxHash
+// TODO: Implement hashing with xxHash https://github.com/Cyan4973/xxHash
+// + faster (50GB/s vs 0.5GB/s) 
+// - non-cryptographic, more collisions
+// Alternative: SHA-256 using OpenSSL or Crypto++ library.
