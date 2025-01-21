@@ -5,15 +5,15 @@
 #include "services/master_service.grpc.pb.h"
 #include "services/frontend_service.grpc.pb.h"
 #include "services/worker_service.grpc.pb.h"
-#include "config.hpp"
 #include "blob_hasher.hpp"
 #include <filesystem>
 #include <fstream>
 #include "utils.hpp"
+#include "expected.hpp"
 
 // User-defined literal "_S" that converts C-string to std::string
 static std::string operator""_S(const char* str, std::size_t) {
-    return std::string(str);
+    return {str};
 }
 
 class FrontendServiceImpl final : public frontend::Frontend::Service
