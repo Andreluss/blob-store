@@ -1,9 +1,8 @@
+#include "frontend_service.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
 #include <grpc++/grpc++.h>
-#include "services/echo_service.grpc.pb.h"
-#include "frontend_service.hpp"
 
 int main(int argc, char** argv) {
     std::cerr << address_to_string(0x7f000001, 42) << " = 127.0.0.1:42\n";

@@ -2,7 +2,7 @@ set(COMPONENT_NAME frontend)
 
 add_executable(${COMPONENT_NAME}
         main.cpp
-        frontend_service.hpp
+        frontend_service.cpp
         utils.hpp
 )
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <variant>
+#include "config.hpp"
 #include <stdexcept>
 #include "common.grpc.pb.h"
-#include "config.hpp"
+#include <fstream>
 
 // TODO-soon: move to (network_)utils.hpp in common/
 inline std::string address_to_string(const uint32_t ip, const uint32_t port) {
@@ -29,13 +29,13 @@ namespace fs = std::filesystem;
 
 class BlobFile
 {
-    const static fs::path BLOBS_PATH;
-    const static uint64_t MAX_CHUNK_SIZE;
+    constexpr static auto BLOBS_PATH = "blobs";
+    constexpr static uint64_t MAX_CHUNK_SIZE = BlobStoreConfig::MAX_CHUNK_SIZE;
 
     fs::path file_path_;
     uint64_t size_;
     explicit BlobFile(const std::string& filename, const uint64_t size)
-        : file_path_(BLOBS_PATH / filename), size_(size)
+        : file_path_(fs::path(BLOBS_PATH) / filename), size_(size)
     {
     }
 
@@ -146,6 +146,13 @@ public:
         size_ += chunk.size();
     }
 
+    // True if the file was deleted.
+    bool remove()
+    {
+        size_ = 0;
+        return std::filesystem::remove(file_path_);
+    }
+
     size_t size() const
     {
         // Note: could've used fs::file_size(file_path_)
@@ -153,5 +160,3 @@ public:
         return size_;
     }
 };
-const fs::path BlobFile::BLOBS_PATH = "blobs";
-const uint64_t BlobFile::MAX_CHUNK_SIZE = BlobStoreConfig::MAX_CHUNK_SIZE;
