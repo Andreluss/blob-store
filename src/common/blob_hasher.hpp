@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include "stdlib.h"   /* abort() */
 #include "xxhash.h"
 
 /// Incremental hashing for blob chunks.
@@ -16,33 +15,31 @@
 class BlobHasher {
     XXH64_state_t* state;
 public:
-    /// TODO: We probably should set seed in config.
-    /// TODO Mateusz: Jeżeli jest jakiś przypadek gdzie chcemy aby różne instancje miały inny seed, lub chcemy go
-    ///     co jakiś czas zmieniać -> do configu. Jeśli nie (a wydaje mi się że nie) i jest to używane tylko w tym miejscu,
-    ///     to nie ma co. Im większy config tym gorzej.
-    BlobHasher(XXH64_hash_t seed = 0) {
+    BlobHasher() {
+        XXH64_hash_t seed = 0;
         state = XXH64_createState();
-        // TODO Mateusz: Czy na pewno to co chcemy zrobić w tej sytuacji to wywalić całą apke? Jeśli tak to proszę
-        //      dodaj loga co się stało.
-        if (state==NULL) abort();
+        if (state == NULL) {
+            throw std::runtime_error("XXH64_createState failed");
+        }
 
         /* Initialize state with selected seed */
-        if (XXH64_reset(state, seed) == XXH_ERROR) abort();
+        if (XXH64_reset(state, seed) == XXH_ERROR) {
+            throw std::runtime_error("XXH64_reset failed");
+        }
     }
 
     void add_chunk(const std::string& bytes) {
-        // TODO Mateusz: jak wyżej
-        if (XXH64_update(state, bytes.c_str(), bytes.size()) == XXH_ERROR) abort();
+        if (XXH64_update(state, bytes.c_str(), bytes.size()) == XXH_ERROR) {
+            throw std::runtime_error("XXH64_update failed");
+        }
     }
 
     /// Return the hash of all data. Call ONLY ONCE per object.
     /// typedef uint64_t XXH64_hash_t;
-    XXH64_hash_t finalize() {
-        // TODO Mateusz: Czy chcemy żeby ta funkcja zwracała XXH64_hash_t, czy nie lepiej od razu do naszego wewnętrznego formatu (string)?
-        //  Wtedy wszystkie użycia biblioteki do hashowania można by zamknąć w BlobHasher.
+    std::string finalize() {
         /* Produce the final hash value */
         XXH64_hash_t const hash = XXH64_digest(state);
         XXH64_freeState(state);
-        return hash;
+        return std::to_string(hash);
     }
 };
