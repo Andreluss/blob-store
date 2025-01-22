@@ -1,6 +1,3 @@
-//
-// Created by andrez on 1/18/25.
-//
 #pragma once
 #include "services/master_service.grpc.pb.h"
 #include "services/frontend_service.grpc.pb.h"
@@ -26,103 +23,26 @@ class FrontendServiceImpl final : public frontend::Frontend::Service
     }
 
     // Returns an optional ERROR string
-    static std::optional<std::string> send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash, common::ipv4Address worker_address)
-    {
-        try
-        {
-            const auto address_string = address_to_string(worker_address);
-            std::cerr << "Sending blob to worker at " << address_string << std::endl;
+    static auto send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
+                                    const common::ipv4Address& worker_address) -> std::optional<std::string>
+    ;
 
-            const auto worker_channel = grpc::CreateChannel(address_string, grpc::InsecureChannelCredentials());
-            const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
-
-            grpc::ClientContext client_context;
-            worker::SaveBlobResponse save_blob_response;
-            const auto writer = worker_stub->SaveBlob(&client_context, &save_blob_response);
-
-            for (const auto& chunk: blob)
-            {
-                worker::SaveBlobRequest save_blob_request;
-                save_blob_request.set_hash(blob_hash);
-                save_blob_request.set_size_bytes(blob.size());
-                save_blob_request.set_chunk_data(chunk.data(), chunk.size());
-                if (!writer->Write(save_blob_request)) {
-                    return "Failed to save blob to worker - broken stream";
-                }
-            }
-
-            return std::nullopt;
-        }
-        catch (const BlobFile::FileSystemException& fse)
-        {
-            return "Error while sending blob to worker: "_S + fse.what();
-        }
-    }
-
-    Expected<std::pair<BlobFile, std::string>, grpc::Status> receive_and_hash_blob(
-        grpc::ServerReader<frontend::UploadBlobRequest>* reader)
-    {
-        frontend::UploadBlobRequest request;
-
-        // 1. Read blob info
-        reader->Read(&request);
-        if (!request.has_info()) {
-            return grpc::Status(grpc::INVALID_ARGUMENT, "Request should start with blob info.");
-        }
-        const auto blob_size = request.info().size_bytes();
-
-        // 2. Read chunks
-        try
-        {
-            BlobHasher blob_hasher;
-            auto blob_file = BlobFile::New("temp.blob");
-            while (reader->Read(&request))
-            {
-                if (!request.has_chunk_data()) {
-                    return grpc::Status(grpc::INVALID_ARGUMENT, "Request missing chunk data.");
-                }
-
-                blob_file.append_chunk(request.chunk_data());
-                blob_hasher.add_chunk(request.chunk_data());
-            }
-
-            auto blob_hash = blob_hasher.finalize();
-            if (blob_file.size() != blob_size) {
-                return grpc::Status(grpc::INVALID_ARGUMENT, "Blob file size mismatch.");
-            }
-
-            return std::make_pair(blob_file, blob_hash);
-        }
-        catch (const BlobFile::FileSystemException& fse)
-        {
-            return grpc::Status(grpc::CANCELLED, fse.what());
-        }
-    }
+    static auto receive_and_hash_blob(
+        grpc::ServerReader<frontend::UploadBlobRequest>* reader) -> Expected<
+        std::pair<BlobFile, std::string>, grpc::Status>
+    ;
 
     static auto get_workers_from_master(std::string blob_hash,
-                                 const std::unique_ptr<master::MasterService::Stub>& master_stub) -> Expected<
-            google::protobuf::RepeatedPtrField<common::ipv4Address>, std::string>
-    {
-        // Ask master for workers to store blob.
-        grpc::ClientContext client_context;
-        master::GetWorkersToSaveBlobRequest get_workers_request;
-        get_workers_request.set_blobid(blob_hash);
-        master::GetWorkersToSaveBlobResponse get_workers_response;
-        if (const auto status = master_stub->GetWorkersToSaveBlob(&client_context, get_workers_request,
-                                                                   &get_workers_response); !status.ok()) {
-            return status.error_message();
-        }
-        if (!get_workers_response.success()) {
-            return get_workers_response.message();
-        }
+                                        const std::unique_ptr<master::MasterService::Stub>& master_stub)
+                                    -> Expected<google::protobuf::RepeatedPtrField<common::ipv4Address>, std::string>
+    ;
 
-        return get_workers_response.addresses();
-    }
+    [[nodiscard]] auto get_worker_with_blob_id(std::string blob_id) const -> Expected<common::ipv4Address, std::string>;
+
 public:
     explicit FrontendServiceImpl(const std::shared_ptr<grpc::Channel>& master_channel)
     : master_stub_(master::MasterService::NewStub(master_channel))
-    {
-    }
+    {}
 
     grpc::Status UploadBlob(grpc::ServerContext* context, grpc::ServerReader<frontend::UploadBlobRequest>* reader,
                             frontend::UploadBlobResponse* response) override
@@ -133,6 +53,7 @@ public:
             return result.error();
         }
         const auto& [blob_file, blob_hash] = result.value();
+        // TODO remove the file at the end
 
         // TODO-soon: select master based on the hash.
 
@@ -157,10 +78,61 @@ public:
         return grpc::Status::OK;
     }
 
+    static auto start_get_blob_from_worker(std::string blob_id, const common::ipv4Address& worker_address)
+    {
+        const auto address_string = address_to_string(worker_address);
+        const auto worker_channel = grpc::CreateChannel(address_string, grpc::InsecureChannelCredentials());
+        const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
+
+        worker::GetBlobRequest worker_request;
+        worker_request.set_hash(blob_id);
+        grpc::ClientContext client_context;
+
+        auto reader = worker_stub->GetBlob(&client_context, worker_request);
+        return reader;
+    }
+
     grpc::Status GetBlob(grpc::ServerContext* context, const frontend::GetBlobRequest* request,
                          grpc::ServerWriter<frontend::GetBlobResponse>* writer) override
     {
-        return Service::GetBlob(context, request, writer);
+        // TODO: choose master based on hash
+        const auto blob_id = request->hash();
+
+        const auto final_result = get_worker_with_blob_id(blob_id)
+        .and_then([&](const common::ipv4Address& worker_address)->Expected<std::monostate, std::string>
+        {
+            const auto reader = start_get_blob_from_worker(blob_id, worker_address);
+
+            frontend::GetBlobResponse response;
+            worker::GetBlobResponse worker_response;
+            bool sent_blob_info = false;
+            while (reader->Read(&worker_response)) {
+                if (!sent_blob_info) {
+                    frontend::BlobInfo blob_info;
+                    blob_info.set_size_bytes(worker_response.size_bytes());
+                    response.set_allocated_info(&blob_info);
+                    if (!writer->Write(response)) {
+                        return Unexpected("Broken client stream - can't send blob header");
+                    }
+                    sent_blob_info = true;
+                }
+                response.set_chunk_data(worker_response.chunk_data());
+                if (!writer->Write(response)) {
+                    return "Broken client write stream - can't write next chunk";
+                }
+            }
+
+            if (!sent_blob_info) {
+                return "Worker didn't return any bytes for the blob";
+            }
+
+            return std::monostate();
+        });
+
+        if (!final_result.has_value()) {
+            return grpc::Status(grpc::StatusCode::CANCELLED, final_result.error());
+        }
+        return grpc::Status::OK;
     }
 
     grpc::Status DeleteBlob(grpc::ServerContext* context, const frontend::DeleteBlobRequest* request,
@@ -173,26 +145,19 @@ public:
         master_request.set_blobid(request->hash());
         const auto master_status = master_stub_->DeleteBlob(&client_context, master_request, &master_response);
 
-        // Match on result.
-        if (master_status.ok())
+        if (not master_status.ok())
         {
-            response->set_delete_result(master_response.message());
-            if (master_response.success())
-            {
-                return grpc::Status::OK;
-            }
-            else
-            {
-                return grpc::Status(grpc::StatusCode::NOT_FOUND, "Failed to delete blob");
-            }
-        }
-        else
-        {
-            auto error_message = "Error with request to master: " + master_status.error_message();
-            std::cerr << error_message << std::endl;
-            response->set_delete_result(error_message);
+            response->set_delete_result(failed_request(master_status.error_message(),
+                "delete request to master"));
             return grpc::Status::CANCELLED;
         }
+        response->set_delete_result(master_response.message());
+        if (not master_response.success())
+        {
+            return grpc::Status(grpc::StatusCode::CANCELLED, "Failed to delete blob");
+        }
+
+        return grpc::Status::OK;
     }
 
     grpc::Status HealthCheck(grpc::ServerContext* context, const frontend::HealthcheckRequest* request,
@@ -202,4 +167,116 @@ public:
         return grpc::Status::OK;
     }
 };
+
+inline auto FrontendServiceImpl::send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
+    const common::ipv4Address& worker_address) -> std::optional<std::string>
+{
+    try
+    {
+        const auto address_string = address_to_string(worker_address);
+        std::cerr << "Sending blob to worker at " << address_string << std::endl;
+
+        const auto worker_channel = grpc::CreateChannel(address_string, grpc::InsecureChannelCredentials());
+        const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
+
+        grpc::ClientContext client_context;
+        worker::SaveBlobResponse save_blob_response;
+        const auto writer = worker_stub->SaveBlob(&client_context, &save_blob_response);
+
+        for (const auto& chunk: blob)
+        {
+            worker::SaveBlobRequest save_blob_request;
+            save_blob_request.set_hash(blob_hash);
+            save_blob_request.set_size_bytes(blob.size());
+            save_blob_request.set_chunk_data(chunk.data(), chunk.size());
+            if (!writer->Write(save_blob_request)) {
+                return "Failed to save blob to worker - broken stream";
+            }
+        }
+
+        return std::nullopt;
+    }
+    catch (const BlobFile::FileSystemException& fse)
+    {
+        return "Error while sending blob to worker: "_S + fse.what();
+    }
+}
+
+inline auto FrontendServiceImpl::receive_and_hash_blob(
+    grpc::ServerReader<frontend::UploadBlobRequest>* reader) -> Expected<std::pair<BlobFile, std::string>, grpc::Status>
+{
+    frontend::UploadBlobRequest request;
+
+    // 1. Read blob info
+    reader->Read(&request);
+    if (!request.has_info()) {
+        return grpc::Status(grpc::INVALID_ARGUMENT, "Request should start with blob info.");
+    }
+    const auto blob_size = request.info().size_bytes();
+
+    // 2. Read chunks
+    try
+    {
+        BlobHasher blob_hasher;
+        auto blob_file = BlobFile::New("temp.blob");
+        while (reader->Read(&request))
+        {
+            if (!request.has_chunk_data()) {
+                return grpc::Status(grpc::INVALID_ARGUMENT, "Request missing chunk data.");
+            }
+
+            blob_file.append_chunk(request.chunk_data());
+            blob_hasher.add_chunk(request.chunk_data());
+        }
+
+        auto blob_hash = blob_hasher.finalize();
+        if (blob_file.size() != blob_size) {
+            return grpc::Status(grpc::INVALID_ARGUMENT, "Blob file size mismatch.");
+        }
+
+        return std::make_pair(blob_file, blob_hash);
+    }
+    catch (const BlobFile::FileSystemException& fse)
+    {
+        return grpc::Status(grpc::CANCELLED, fse.what());
+    }
+}
+
+inline auto FrontendServiceImpl::get_workers_from_master(std::string blob_hash,
+    const std::unique_ptr<master::MasterService::Stub>& master_stub) -> Expected<google::protobuf::RepeatedPtrField<
+    common::ipv4Address>, std::string>
+{
+    // Ask master for workers to store blob.
+    grpc::ClientContext client_context;
+    master::GetWorkersToSaveBlobRequest get_workers_request;
+    get_workers_request.set_blobid(blob_hash);
+    master::GetWorkersToSaveBlobResponse get_workers_response;
+    if (const auto status = master_stub->GetWorkersToSaveBlob(&client_context, get_workers_request,
+                                                              &get_workers_response); !status.ok()) {
+        return status.error_message();
+    }
+    if (!get_workers_response.success()) {
+        return get_workers_response.message();
+    }
+
+    return get_workers_response.addresses();
+}
+
+inline auto FrontendServiceImpl::get_worker_with_blob_id(
+    std::string blob_id) const -> Expected<common::ipv4Address, std::string>
+{
+    master::GetWorkerWithBlobRequest request;
+    request.set_blobid(blob_id);
+    master::GetWorkerWithBlobResponse response;
+    grpc::ClientContext client_context;
+    master_stub_->GetWorkerWithBlob(&client_context, request, &response);
+    if (const auto status = master_stub_->GetWorkerWithBlob(&client_context, request, &response); !status.ok()) {
+        return status.error_message();
+    }
+    if (!response.success()) {
+        return response.message();
+    }
+    auto actually_one_address = response.addresses();
+    return actually_one_address;
+}
 

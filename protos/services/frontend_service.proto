@@ -21,7 +21,7 @@ message UploadBlobRequest {
 }
 
 message BlobInfo {
-  uint64 size_bytes = 1;
+  uint64 size_bytes = 1; // size of the whole blob
   optional string name = 2;
 }
 
