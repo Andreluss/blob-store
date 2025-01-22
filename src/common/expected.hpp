@@ -2,14 +2,35 @@
 #include <variant>
 #include <stdexcept>
 
+// Wrapper class for creating error case explicitly.
+template <typename E>
+class Unexpected
+{
+public:
+    explicit Unexpected(const E& error): error_(error) {}
+    const E& error_;
+};
+
 // The custom expected type - like Ocaml's Or_error or Rust's Result
 template <typename T, typename E>
+requires (!std::is_void_v<T>)
 class Expected {
 public:
-    // Constructors for both valid value and error value
-    explicit(false) Expected(T value) : value_or_error(value) {}
-    explicit(false) Expected(E error) : value_or_error(error) {}
+    using value_type = T;
+    using error_type = E;
 
+    explicit(false) Expected(const T& value): value_or_error(value) {}
+    explicit(false) Expected(const E& error): value_or_error(error) {}
+
+    template<class U> requires (std::is_convertible_v<U, E> && !std::is_convertible_v<U, T>)
+    explicit(false) Expected(const U& error): value_or_error(error) {}
+
+    template<class U> requires (std::is_convertible_v<U, E>)
+    explicit(false) Expected(Unexpected<U> unexpected): value_or_error(E(unexpected.error_)) {}
+
+    Expected& operator=(const T& value) { return *this = Expected(value); }
+    Expected& operator=(const E& error) { return *this = Expected(error); }
+public:
     // Check if the result is valid (holds a T value)
     [[nodiscard]] bool has_value() const {
         return std::holds_alternative<T>(value_or_error);
@@ -45,7 +66,24 @@ public:
         return std::get<E>(value_or_error);
     }
 
+    // For chaining operations on the happy path and handling the error only once.
+    template <typename Func, typename FuncResult = std::invoke_result_t<Func, T>,
+              typename FuncResultValue = typename FuncResult::value_type>
+    requires std::is_invocable_v<Func, T> && std::is_same_v<FuncResult, Expected<FuncResultValue, E>>
+    auto and_then(Func&& f) -> Expected<FuncResultValue, E> {
+        if (has_value()) {
+            try {
+                return std::forward<Func>(f)(value());
+            }
+            catch (const std::exception& e) {
+                return E(e.what());
+            }
+        }
+        return error();
+    }
+
 private:
     // A variant that holds either a valid value of type T or an error of type E
     std::variant<T, E> value_or_error;
 };
+
