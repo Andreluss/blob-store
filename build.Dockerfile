@@ -27,6 +27,9 @@ RUN vcpkg install grpc:x64-linux protobuf:x64-linux
 # Install gtest
 RUN vcpkg install gtest:x64-linux
 
+# Install xxhash
+RUN vcpkg install xxhash
+
 # Set up working directory
 ARG workdir
 WORKDIR $workdir
