@@ -1,12 +1,16 @@
 #include "frontend_service.hpp"
+#include "utils.hpp"
+#include "expected.hpp"
+#include "blob_hasher.hpp"
 #include <fstream>
+#include <services/worker_service.grpc.pb.h>
 
 // User-defined literal "_S" that converts C-string to std::string
 static std::string operator""_S(const char* str, std::size_t) {
     return {str};
 }
 
-auto FrontendServiceImpl::send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
+auto send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
     const common::ipv4Address& worker_address) -> std::optional<std::string>
 {
     try
@@ -40,7 +44,7 @@ auto FrontendServiceImpl::send_blob_to_worker(const BlobFile& blob, const std::s
     }
 }
 
-auto FrontendServiceImpl::start_get_blob_from_worker(std::string blob_id, const common::ipv4Address& worker_address)
+auto start_get_blob_from_worker(std::string blob_id, const common::ipv4Address& worker_address)
     -> std::unique_ptr< ::grpc::ClientReader< ::worker::GetBlobResponse>>
 {
     const auto address_string = address_to_string(worker_address);
@@ -55,7 +59,7 @@ auto FrontendServiceImpl::start_get_blob_from_worker(std::string blob_id, const 
     return reader;
 }
 
-auto FrontendServiceImpl::receive_and_hash_blob(
+auto receive_and_hash_blob(
     grpc::ServerReader<frontend::UploadBlobRequest>* reader) -> Expected<std::pair<BlobFile, std::string>, grpc::Status>
 {
     frontend::UploadBlobRequest request;
@@ -96,7 +100,7 @@ auto FrontendServiceImpl::receive_and_hash_blob(
 }
 
 
-auto FrontendServiceImpl::get_workers_from_master(std::string blob_hash,
+auto get_workers_from_master(std::string blob_hash,
     const std::unique_ptr<master::MasterService::Stub>& master_stub) -> Expected<google::protobuf::RepeatedPtrField<
     common::ipv4Address>, std::string>
 {
@@ -116,8 +120,8 @@ auto FrontendServiceImpl::get_workers_from_master(std::string blob_hash,
     return get_workers_response.addresses();
 }
 
-auto FrontendServiceImpl::get_worker_with_blob_id(
-    std::string blob_id) const -> Expected<common::ipv4Address, std::string>
+auto get_worker_with_blob_id(const auto& master_stub_,
+    std::string blob_id) -> Expected<common::ipv4Address, std::string>
 {
     master::GetWorkerWithBlobRequest request;
     request.set_blobid(blob_id);
@@ -181,7 +185,7 @@ grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const fr
     // TODO: choose master based on hash
     const auto blob_id = request->hash();
 
-    const auto final_result = get_worker_with_blob_id(blob_id)
+    const auto final_result = get_worker_with_blob_id(master_stub_, blob_id)
     .and_then([&](const common::ipv4Address& worker_address)->Expected<std::monostate, std::string>
     {
         const auto reader = start_get_blob_from_worker(blob_id, worker_address);

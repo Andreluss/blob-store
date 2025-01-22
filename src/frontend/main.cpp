@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <grpc++/grpc++.h>
+#include "utils.hpp"
 
 int main(int argc, char** argv) {
     std::cerr << address_to_string(0x7f000001, 42) << " = 127.0.0.1:42\n";
