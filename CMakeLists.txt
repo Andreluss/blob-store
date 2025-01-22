@@ -9,6 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
+include_directories(/opt/vcpkg/installed/x64-linux/include)
+link_directories(/opt/vcpkg/installed/x64-linux/lib)
+
 # Option to build specific components
 option(BUILD_FRONTEND "Build frontend component" ON)
 option(BUILD_MASTER "Build master component" ON)
