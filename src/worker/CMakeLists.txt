@@ -2,6 +2,7 @@ set(COMPONENT_NAME worker)
 
 add_executable(${COMPONENT_NAME}
         main.cpp
+        worker_service.cpp
 )
 
 target_include_directories(${COMPONENT_NAME} PRIVATE
