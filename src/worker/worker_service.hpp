@@ -10,6 +10,7 @@
 #include "services/worker_service.grpc.pb.h"
 #include "services/master_service.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
+#include "blob_hasher.hpp"
 
 // We assume that blobs are stored in the blobs/ directory which is created in the same
 // directory as the executable.
@@ -51,7 +52,7 @@ public:
 
         worker::SaveBlobRequest request;
         bool created_file = false;
-        std::string calculated_hash;
+        BlobHasher blob_hasher;
 
         auto create_file_if_needed = [&](const std::string &filename) -> RetCode {
             if (not created_file) {
@@ -69,7 +70,7 @@ public:
                 return grpc::Status::CANCELLED;
             }
 
-            calculated_hash = recalculate_hash(request.chunk_data(), calculated_hash);
+            blob_hasher.add_chunk(request.chunk_data());
 
             if (append_to_file(request.hash(), request.chunk_data()) == RetCode::ERROR_FILESYSTEM) {
                 response->set_message("Error appending bytes to file.");
@@ -78,7 +79,7 @@ public:
             }
         }
 
-        if (calculated_hash != request.hash()) {
+        if (blob_hasher.finalize() != request.hash()) {
             response->set_message("Error: Hash mismatch.");
             return grpc::Status::CANCELLED;
         }
@@ -160,11 +161,6 @@ private:
         ERROR_FILE_NOT_FOUND,
         ERROR_FILESYSTEM,
     };
-
-    static std::string recalculate_hash(const std::string &data, const std::string &previous_hash) {
-        // TODO: Decide how we want to calculate hash.
-        return previous_hash;
-    }
 
     static std::pair<RetCode, uint64_t> get_free_storage() {
         try {
