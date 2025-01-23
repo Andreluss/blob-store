@@ -2,6 +2,7 @@
 #include "utils.hpp"
 #include "expected.hpp"
 #include "blob_hasher.hpp"
+#include "blob_file.hpp"
 #include <fstream>
 #include <services/worker_service.grpc.pb.h>
 
