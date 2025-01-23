@@ -27,8 +27,7 @@ message GetFreeStorageResponse {
 
 message SaveBlobRequest {
     string hash = 1;
-    uint64 size_bytes = 2;
-    bytes chunk_data = 3;
+    bytes chunk_data = 2;
 }
 
 message SaveBlobResponse {
@@ -40,8 +39,7 @@ message GetBlobRequest {
 }
 
 message GetBlobResponse {
-    uint64 size_bytes = 1;
-    bytes chunk_data = 2;
+    bytes chunk_data = 1;
 }
 
 message DeleteBlobRequest {
