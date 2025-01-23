@@ -72,14 +72,16 @@ public:
     requires std::is_invocable_v<Func, T> && std::is_same_v<FuncResult, Expected<FuncResultValue, E>>
     auto and_then(Func&& f) -> Expected<FuncResultValue, E> {
         if (has_value()) {
-            try {
-                return std::forward<Func>(f)(value());
-            }
-            catch (const std::exception& e) {
-                return E(e.what());
-            }
+            return std::forward<Func>(f)(value());
         }
         return error();
+    }
+
+    // Merges value and error into one type.
+    template <typename Output>
+    auto output(std::function<Output(const T&)> t_conv, std::function<Output(const E&)> e_conv) -> Output {
+        if (has_value()) { return t_conv(value()); }
+        return e_conv(error());
     }
 
 private:
