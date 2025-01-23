@@ -1,5 +1,6 @@
 #include "worker_service.hpp"
 #include "blob_hasher.hpp"
+#include "expected.hpp"
 #include <filesystem>
 #include <fstream>
 #include <grpcpp/grpcpp.h>
@@ -14,13 +15,12 @@ enum RetCode {
     ERROR_FILESYSTEM,
 };
 
-auto get_free_storage() {
+auto get_free_storage() -> Expected<uint64_t, std::string> {
     try {
         auto space = std::filesystem::space(BLOBS_PATH);
-        return std::make_pair(RetCode::SUCCESS, (uint64_t) space.free);
+        return (uint64_t) space.free;
     } catch (const std::filesystem::filesystem_error &e) {
-        std::cerr << "Error: " << e.what() << '\n';
-        return std::make_pair(RetCode::ERROR_FILESYSTEM, (uint64_t) 0);
+        return "Error while getting free storage.";
     }
 }
 
@@ -105,14 +105,19 @@ grpc::Status WorkerServiceImpl::Healthcheck(grpc::ServerContext *context,
 grpc::Status WorkerServiceImpl::GetFreeStorage(grpc::ServerContext *context,
                                                const worker::GetFreeStorageRequest *request,
                                                worker::GetFreeStorageResponse *response) {
-    auto [status, storage] = get_free_storage();
-    if (status == RetCode::ERROR_FILESYSTEM) {
-        response->set_message("Error while getting free storage.");
-        return grpc::Status::CANCELLED;
-    }
-    response->set_message("OK");
-    response->set_storage(storage);
-    return grpc::Status::OK;
+    return get_free_storage()
+        .and_then([&](uint64_t storage) -> Expected<std::monostate, std::string> {
+            response->set_message("OK");
+            response->set_storage(storage);
+            return std::monostate{};
+        })
+        .output<grpc::Status>(
+            [](auto _) {return grpc::Status::OK;},
+            [&](auto &error) {
+                response->set_message(error);
+                return grpc::Status::CANCELLED;
+            }
+        );
 }
 
 grpc::Status WorkerServiceImpl::SaveBlob(grpc::ServerContext *context,
