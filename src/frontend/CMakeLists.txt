@@ -15,6 +15,7 @@ target_link_libraries(${COMPONENT_NAME}
         proto_lib
         gRPC::grpc++
         gRPC::grpc++_reflection
+        xxHash::xxhash
 )
 
 # Set output directory

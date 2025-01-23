@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find required packages
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
+find_package(xxHash CONFIG REQUIRED)
 
 # Option to build specific components
 option(BUILD_FRONTEND "Build frontend component" ON)
