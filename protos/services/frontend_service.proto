@@ -33,11 +33,9 @@ message GetBlobRequest {
   string hash = 1;
 }
 
+// Client receives a series of chunks and validates their hash.
 message GetBlobResponse {
-  oneof data {
-    BlobInfo info = 1;
-    bytes chunk_data = 2;
-  }
+  bytes chunk_data = 1;
 }
 
 message DeleteBlobRequest {
