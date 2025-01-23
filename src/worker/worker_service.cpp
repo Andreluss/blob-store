@@ -75,22 +75,20 @@ auto set_next_chunk(
     return infile.eof() ? RetCode::FINISHED : RetCode::SUCCESS;
 }
 
-auto delete_file(const std::string &hash) {
+auto delete_file(const std::string &hash) -> Expected<std::monostate, std::string> {
     auto filepath = BLOBS_PATH + hash;
 
     try {
         if (std::filesystem::exists(filepath)) {
             std::filesystem::remove(filepath);
         } else {
-            std::cerr << "Error: File does not exist: " << filepath << '\n';
-            return RetCode::ERROR_FILE_NOT_FOUND;
+            return "Error: File not found: " + filepath;
         }
     } catch (const std::filesystem::filesystem_error &e) {
-        std::cerr << "Filesystem error: " << e.what() << '\n';
-        return RetCode::ERROR_FILESYSTEM;
+        return "Error: Filesystem error.";
     }
 
-    return RetCode::SUCCESS;
+    return std::monostate{};
 }
 ///---- END HELPERS ----///
 
@@ -205,21 +203,17 @@ grpc::Status WorkerServiceImpl::GetBlob(grpc::ServerContext *context,
 grpc::Status WorkerServiceImpl::DeleteBlob(grpc::ServerContext *context,
                                            const worker::DeleteBlobRequest *request,
                                            worker::DeleteBlobResponse *response) {
-    auto return_code = delete_file(request->hash());
 
-    switch (return_code) {
-        case RetCode::SUCCESS:
-            response->set_message("OK");
-            return grpc::Status::OK;
-        case RetCode::ERROR_FILE_NOT_FOUND:
-            response->set_message("Error: File not found.");
-            return grpc::Status::CANCELLED;
-        case RetCode::ERROR_FILESYSTEM:
-            response->set_message("Error: Filesystem error.");
-            return grpc::Status::CANCELLED;
-        default:
-            response->set_message("Error: Unknown error.");
-            return grpc::Status::CANCELLED;
-    }
+    return delete_file(request->hash())
+        .output<grpc::Status>(
+            [&](auto _) {
+                response->set_message("OK");
+                return grpc::Status::OK;
+            },
+            [&](auto &error) {
+                response->set_message(error);
+                return grpc::Status::CANCELLED;
+            }
+        );
 }
 ///---- END WORKER SERVICE ----///
