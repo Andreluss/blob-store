@@ -31,7 +31,6 @@ auto send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
         {
             worker::SaveBlobRequest save_blob_request;
             save_blob_request.set_hash(blob_hash);
-            save_blob_request.set_size_bytes(blob.size());
             save_blob_request.set_chunk_data(chunk.data(), chunk.size());
             if (!writer->Write(save_blob_request)) {
                 return "Failed to save blob to worker - broken stream";
@@ -192,25 +191,11 @@ grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const fr
 
         frontend::GetBlobResponse response;
         worker::GetBlobResponse worker_response;
-        bool sent_blob_info = false;
         while (reader->Read(&worker_response)) {
-            if (!sent_blob_info) {
-                frontend::BlobInfo blob_info;
-                blob_info.set_size_bytes(worker_response.size_bytes());
-                response.set_allocated_info(&blob_info);
-                if (!writer->Write(response)) {
-                    return Unexpected("Broken client stream - can't send blob header");
-                }
-                sent_blob_info = true;
-            }
             response.set_chunk_data(worker_response.chunk_data());
             if (!writer->Write(response)) {
                 return "Broken client write stream - can't write next chunk";
             }
-        }
-
-        if (!sent_blob_info) {
-            return "Worker didn't return any bytes for the blob";
         }
 
         return std::monostate();
