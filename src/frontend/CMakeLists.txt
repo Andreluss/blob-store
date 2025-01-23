@@ -2,6 +2,8 @@ set(COMPONENT_NAME frontend)
 
 add_executable(${COMPONENT_NAME}
         main.cpp
+        frontend_service.cpp
+        utils.hpp
 )
 
 target_include_directories(${COMPONENT_NAME} PRIVATE
@@ -13,6 +15,7 @@ target_link_libraries(${COMPONENT_NAME}
         proto_lib
         gRPC::grpc++
         gRPC::grpc++_reflection
+        xxHash::xxhash
 )
 
 # Set output directory
