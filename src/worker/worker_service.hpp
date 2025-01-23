@@ -119,7 +119,7 @@ public:
 
         while ((return_value = set_next_chunk(response, bytes_sent, request->hash())) ==
         RetCode::SUCCESS) {
-            bytes_sent += response.size_bytes();
+            bytes_sent += response.chunk_data().size();
             writer->Write(response);
         }
 
@@ -218,7 +218,6 @@ private:
         infile.read(buffer, MAX_CHUNK_SIZE);
         size_t bytes_read = infile.gcount();
 
-        response.set_size_bytes(bytes_read);
         response.set_chunk_data(std::string(buffer, bytes_read));
 
         return infile.eof() ? RetCode::FINISHED : RetCode::SUCCESS;
