@@ -2,6 +2,8 @@ set(COMPONENT_NAME frontend)
 
 add_executable(${COMPONENT_NAME}
         main.cpp
+        frontend_service.cpp
+        utils.hpp
 )
 
 target_include_directories(${COMPONENT_NAME} PRIVATE
