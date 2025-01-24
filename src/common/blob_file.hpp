@@ -14,9 +14,9 @@ class BlobFile
     constexpr static uint64_t MAX_CHUNK_SIZE = BlobStoreConfig::MAX_CHUNK_SIZE;
 
     fs::path file_path_;
-    uint64_t size_;
+    uint64_t file_size_;
     explicit BlobFile(fs::path  path, const uint64_t size)
-        : file_path_(std::move(path)), size_(size)
+        : file_path_(std::move(path)), file_size_(size)
     {
     }
 
@@ -62,8 +62,8 @@ public:
         }
 
     public:
-        explicit ChunkIterator(const fs::path& file_path, const uint64_t file_size, const uint64_t start_pos = 0)
-        : next_byte(start_pos), file_size_(file_size), file_path_(file_path) {
+        explicit ChunkIterator(fs::path file_path, const uint64_t file_size, const uint64_t start_pos = 0)
+        : next_byte(start_pos), file_size_(file_size), file_path_(std::move(file_path)) {
 
         }
         ~ChunkIterator () {
@@ -96,8 +96,8 @@ public:
         }
     };
 
-    ChunkIterator begin() const { return ChunkIterator(file_path_, size_, 0); }
-    ChunkIterator end() const { return ChunkIterator(file_path_, size_, size()); }
+    ChunkIterator begin() const { return ChunkIterator(file_path_, file_size_, 0); }
+    ChunkIterator end() const { return ChunkIterator(file_path_, file_size_, size()); }
 
     /// Creates a NEW file for blob.
     /// Throws FileSystemException, if it couldn't open the file.
@@ -139,13 +139,13 @@ public:
         outfile.write(chunk.c_str(), chunk.size());
         outfile.close();
 
-        size_ += chunk.size();
+        file_size_ += chunk.size();
     }
 
     // True if the file was deleted.
     bool remove()
     {
-        size_ = 0;
+        file_size_ = 0;
         return std::filesystem::remove(file_path_);
     }
 
@@ -153,6 +153,6 @@ public:
     {
         // Note: could've used fs::file_size(file_path_)
         // but the metadata might have not been flushed yet
-        return size_;
+        return file_size_;
     }
 };

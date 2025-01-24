@@ -14,7 +14,6 @@ protected:
                                                   grpc::InsecureChannelCredentials());
 
         service_ = std::make_unique<WorkerServiceImpl>(master_channel);
-
         grpc::ServerBuilder builder;
         builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
         builder.RegisterService(service_.get());
@@ -124,7 +123,7 @@ TEST_F(WorkerServiceTest, DeleteBlob) {
     auto hash = hasher.finalize();
 
     auto blob_file = BlobFile::New(hash);
-    blob_file.append_chunk(message);
+    blob_file.append_chunk(message); // TODO Mateusz += operator in blob_file
 
     worker::DeleteBlobRequest request;
     request.set_hash(hash);
@@ -134,4 +133,7 @@ TEST_F(WorkerServiceTest, DeleteBlob) {
 
     auto status = stub_->DeleteBlob(&context, request, &response);
     EXPECT_TRUE(status.ok());
+    // TODO Mateusz: make sure the file doesn't exist
 }
+
+// TODO Mateusz: Test multi-chunk operation
