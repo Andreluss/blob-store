@@ -11,7 +11,6 @@
 // We assume that blobs are stored in the blobs/ directory which is created in the same
 // directory as the executable.
 const std::string BLOBS_PATH = "blobs/";
-const uint64_t MAX_CHUNK_SIZE = 1024 * 1024;
 
 
 class WorkerServiceImpl final : public worker::WorkerService::Service {
