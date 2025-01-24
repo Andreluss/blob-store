@@ -20,7 +20,7 @@ message HealthcheckResponse {
 
 // Message send by front end to get workers IPs and ports
 message GetWorkersToSaveBlobRequest {
-  string blobId = 1;
+  string blob_hash = 1;
 }
 
 message GetWorkersToSaveBlobResponse {
@@ -29,15 +29,15 @@ message GetWorkersToSaveBlobResponse {
 
 // Message send by worker to notify successful saving of blob
 message NotifyBlobSavedRequest {
-  string workderId = 1;
-  string blobId = 2;
+  string worker_id = 1;
+  string blob_hash = 2;
 }
 
 message NotifyBlobSavedResponse {}
 
 // Message send by frontend to get address of worker with specific blob
 message GetWorkerWithBlobRequest {
-  string blobId = 1;
+  string blob_hash = 1;
 }
 
 message GetWorkerWithBlobResponse {
@@ -46,7 +46,7 @@ message GetWorkerWithBlobResponse {
 
 // Message send by frontend to request deletion of a blob
 message DeleteBlobRequest {
-  string blobId = 1;
+  string blob_hash = 1;
 }
 
 message DeleteBlobResponse {}

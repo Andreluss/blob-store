@@ -28,7 +28,7 @@ auto receive_blob_from_frontend(
 
         while (reader->Read(&request)) {
             if (request_hash.empty()) {
-                request_hash = request.hash();
+                request_hash = request.blob_hash();
                 blob_file = BlobFile::New(request_hash);
             }
 
@@ -51,7 +51,7 @@ auto receive_blob_from_frontend(
 auto send_blob_to_frontend(const worker::GetBlobRequest *request,
                            grpc::ServerWriter<worker::GetBlobResponse> *writer) -> Expected<std::monostate, grpc::Status> {
     try {
-        BlobFile blob_file = BlobFile::Load(request->hash());
+        BlobFile blob_file = BlobFile::Load(request->blob_hash());
         for (auto chunk: blob_file) {
             worker::GetBlobResponse response;
             response.set_chunk_data(chunk);
@@ -111,8 +111,8 @@ grpc::Status WorkerServiceImpl::SaveBlob(grpc::ServerContext *context,
     return receive_blob_from_frontend(reader)
             .and_then([&](const std::string &hash) -> Expected<std::monostate, grpc::Status> {
                 master::NotifyBlobSavedRequest notify_request;
-                notify_request.set_workderid("workerId");
-                notify_request.set_blobid(hash);
+                notify_request.set_worker_id("workerId");
+                notify_request.set_blob_hash(hash);
 
                 grpc::ClientContext client_context;
                 master::NotifyBlobSavedResponse notify_response;
@@ -147,7 +147,7 @@ grpc::Status WorkerServiceImpl::DeleteBlob(grpc::ServerContext *context,
                                            const worker::DeleteBlobRequest *request,
                                            worker::DeleteBlobResponse *response) {
 
-    return delete_file(request->hash())
+    return delete_file(request->blob_hash())
             .output<grpc::Status>(
                     [](auto _) { return grpc::Status::OK; },
                     std::identity()
