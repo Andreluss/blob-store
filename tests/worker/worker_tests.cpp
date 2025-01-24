@@ -70,10 +70,7 @@ TEST_F(WorkerServiceTest, SaveBlob) {
 
     std::string blob = "Hello Huskies!";
 
-    auto hasher = BlobHasher();
-    hasher.add_chunk(blob);
-    auto hash = hasher.finalize();
-
+    auto hash = (BlobHasher() += blob).finalize();
     request.set_hash(hash);
     request.set_chunk_data(blob);
 
@@ -92,12 +89,9 @@ TEST_F(WorkerServiceTest, GetBlob) {
     std::filesystem::create_directory(BLOBS_PATH);
     std::string message = "Skibidi sigma";
 
-    auto hasher = BlobHasher();
-    hasher.add_chunk(message);
-    auto hash = hasher.finalize();
-
+    auto hash = (BlobHasher() += message).finalize();
     auto blob_file = BlobFile::New(hash);
-    blob_file.append_chunk(message);
+    blob_file += message;
 
     worker::GetBlobRequest request;
     worker::GetBlobResponse response;
@@ -118,12 +112,9 @@ TEST_F(WorkerServiceTest, DeleteBlob) {
     std::filesystem::create_directory(BLOBS_PATH);
     std::string message = "no more skibidi sigma";
 
-    auto hasher = BlobHasher();
-    hasher.add_chunk(message);
-    auto hash = hasher.finalize();
-
+    auto hash = (BlobHasher() += message).finalize();
     auto blob_file = BlobFile::New(hash);
-    blob_file.append_chunk(message); // TODO Mateusz += operator in blob_file
+    blob_file += message;
 
     worker::DeleteBlobRequest request;
     request.set_hash(hash);
@@ -149,7 +140,7 @@ TEST_F(WorkerServiceTest, MultiChunkSaveBlob) {
 
     auto hasher = BlobHasher();
     for (int i = 0; i < 10; ++i) {
-        hasher.add_chunk(blob);
+        hasher += blob;
     }
     auto hash = hasher.finalize();
 

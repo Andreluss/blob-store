@@ -142,6 +142,12 @@ public:
         file_size_ += chunk.size();
     }
 
+    BlobFile& operator+=(const std::string& chunk)
+    {
+        append_chunk(chunk);
+        return *this;
+    }
+
     // True if the file was deleted.
     bool remove()
     {

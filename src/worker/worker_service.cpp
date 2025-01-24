@@ -32,8 +32,8 @@ auto receive_blob_from_frontend(
                 blob_file = BlobFile::New(request_hash);
             }
 
-            blob_file->append_chunk(request.chunk_data());
-            blob_hasher.add_chunk(request.chunk_data());
+            *blob_file += request.chunk_data();
+            blob_hasher += request.chunk_data();
         }
 
         auto blob_hash = blob_hasher.finalize();
