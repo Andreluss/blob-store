@@ -9,8 +9,8 @@
 void run_frontend()
 {
     std::cout << "DUPABRAKADABRA" << std::endl;
-    const std::string server_address("127.0.0.1:50042");
-    const std::string master_address = "127.0.0.1:50052"; // TODO: get this from env variable
+    const std::string server_address("0.0.0.0:50042");
+    const std::string master_address = "0.0.0.0:50052"; // TODO: get this from env variable
 
     const auto master_channel =
         grpc::CreateChannel(master_address,grpc::InsecureChannelCredentials());
