@@ -2,7 +2,7 @@
 
 #include <string>
 #include "xxhash.h"
-
+#include <stdexcept>
 /// Incremental hashing for blob chunks.
 /// + faster (50GB/s vs 0.5GB/s)
 /// - non-cryptographic, more collisions
