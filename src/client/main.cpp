@@ -10,9 +10,10 @@
 #include <iostream>
 #include <string>
 
-[[noreturn]] void run_frontend_ping(const std::string frontend_load_balancer_address)
+void run_frontend_ping(const std::string frontend_load_balancer_address)
 {
-    while (true) {
+    int cnt = 5;
+    while (cnt--) {
         auto channel = grpc::CreateChannel(frontend_load_balancer_address, grpc::InsecureChannelCredentials());
         const auto frontend_stub = frontend::Frontend::NewStub(std::move(channel));
 
@@ -93,5 +94,6 @@
 }
 
 int main() {
-    run_frontend_upload_blob("34.118.40.21:50042");
+    run_frontend_ping("34.118.88.122:50042");
+    run_frontend_upload_blob("34.118.88.122:50042");
 }

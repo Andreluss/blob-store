@@ -38,6 +38,7 @@ spec:
           env:
             - name: MASTER_SERVICE
               value: "master-0.master-service:5042"
+#            - name: MY_DNS_NAME
           resources:
             limits:
               ephemeral-storage: 1Gi
