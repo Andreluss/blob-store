@@ -34,7 +34,7 @@ void run_worker()
 
 [[noreturn]] void run_frontend_ping()
 {
-    const std::string frontend_load_balancer_address {"34.118.107.27:31660"};
+    const std::string frontend_load_balancer_address {"34.118.97.38:50042"};
     while (true) {
         auto channel = grpc::CreateChannel(frontend_load_balancer_address, grpc::InsecureChannelCredentials());
         const auto frontend_stub = frontend::Frontend::NewStub(std::move(channel));
