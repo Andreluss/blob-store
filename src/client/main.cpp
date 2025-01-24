@@ -1,3 +1,5 @@
+#include <blob_hasher.hpp>
+
 #include "client.hpp"
 #include <grpcpp/grpcpp.h>
 #include <thread>
@@ -30,6 +32,59 @@
     }
 }
 
+[[noreturn]] void run_frontend_upload_blob(const std::string frontend_load_balancer_address)
+{
+    while (true) {
+        auto channel = grpc::CreateChannel(frontend_load_balancer_address, grpc::InsecureChannelCredentials());
+        const auto frontend_stub = frontend::Frontend::NewStub(std::move(channel));
+
+        std::cout << "Uploading blob...\n";
+
+        grpc::ClientContext client_ctx;
+        frontend::UploadBlobRequest request;
+        frontend::UploadBlobResponse response;
+
+        auto writer = frontend_stub->UploadBlob(&client_ctx, &response);
+        std::cerr << "DUPA\n";
+        if (writer)
+        {
+            std::string raw_blob {"ABRAKADABRA"};
+            std::cout << "Starting blob upload! | OK " << std::endl;
+
+            frontend::BlobInfo blob_info;
+            blob_info.set_size_bytes(raw_blob.size());
+            request.set_allocated_info(&blob_info);
+
+            if (not writer->Write(request))
+            {
+                std::cerr << "Failed to upload blob HEADER!" << std::endl;
+                std::cerr << response.SerializeAsString() << std::endl;
+            } else
+            {
+                std::cerr << "Sent blob header! | OK " << std::endl;
+
+                {
+                    request.set_chunk_data(raw_blob);
+                    if (not writer->Write(request))
+                    {
+                        std::cerr << "Failed to upload blob DATA!" << std::endl;
+                        std::cerr << response.SerializeAsString() << std::endl;
+                    }
+                    else
+                    {
+                        std::cerr << "Sent blob data! | OK " << std::endl;
+                        std::cerr << response.SerializeAsString() << std::endl;
+                    }
+                }
+            }
+        }
+        else
+        {
+            std::cout << "Starting blob upload! | FAILED " << std::endl;
+        }
+    }
+}
+
 int main() {
-    run_frontend_ping("34.118.97.38:50042");
+    run_frontend_upload_blob("34.118.40.21:50042");
 }

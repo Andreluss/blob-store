@@ -7,7 +7,7 @@ add_executable(${COMPONENT_NAME}
 )
 
 # Specify include directories
-target_include_directories(${COMPONENT_NAME} PUBLIC
+target_include_directories(${COMPONENT_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/src/common
 )
 
@@ -22,5 +22,5 @@ target_link_libraries(${COMPONENT_NAME}
 
 set_target_properties(${COMPONENT_NAME}
         PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
