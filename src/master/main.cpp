@@ -21,7 +21,7 @@ void run_echo()
 
 void run_mock()
 {
-    const std::string container_port = "50051";
+    const std::string container_port = "50042";
     const std::string server_address("0.0.0.0:" + container_port);
     MasterServiceMockImpl service;
 
@@ -37,5 +37,4 @@ void run_mock()
 
 int main() {
     run_mock();
-    return 0;
 }

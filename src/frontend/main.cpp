@@ -12,7 +12,7 @@ void run_frontend()
     const std::string container_port = "50042";
     const std::string server_address = "0.0.0.0" + container_port;
     const std::string master_address =
-        get_env_var("MASTER_ADDRESS").value_or("master-service");
+        get_env_var(ENV_MASTER_SERVICE).value_or("master-service");
 
     const auto master_channel =
         grpc::CreateChannel(master_address,grpc::InsecureChannelCredentials());

@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-service # SERVICE_NAME
+  labels:
+    app: worker
+spec:
+  ports:
+    - port: 50042
+      name: worker
+  clusterIP: None # -> headless service -> DNS for each: worker-service-0, worker-service-1, ...
+  selector:
+    app: worker
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: worker # STATEFULSET_NAME
+spec:
+  selector:
+    matchLabels:
+      app: worker # APP_LABEL_NAME # Matches the Service's selector
+  serviceName: "worker-service" # "SERVICE_NAME"
+  replicas: 1 # NUMBER_OF_REPLICAS
+  template:
+    metadata:
+      labels:
+        app: worker # APP_LABEL_NAME
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: blob-store
+          image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest
+          ports:
+            - containerPort: 50042 # needs to match the worker port
+              name: worker
+          command: ["./build/bin/worker"]
+          env:
+            - name: MASTER_SERVICE
+              value: "master-0.master-service:5042"
+#          volumeMounts:
+#            - name: www
+#              mountPath: CONTAINER_STORAGE_VOLUME_PATH
+#  volumeClaimTemplates:
+#    - metadata:
+#        name: www
+#      spec:
+#        accessModes: [ "ReadWriteOnce" ]
+#        resources:
+#          requests:
+#            storage: 1Gi

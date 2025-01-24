@@ -9,13 +9,16 @@
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include "services/frontend_service.grpc.pb.h"
+#include "environment.hpp"
 
 using namespace std;
 
 void run_worker()
 {
-    const std::string server_address("0.0.0.0:50051");
-    const std::string master_address = "127.0.0.1:50052";
+    const std::string server_address("0.0.0.0:50042");
+    const std::string master_address =
+        get_env_var(ENV_MASTER_SERVICE)
+        .value_or("master-service-0.master-service");
 
     auto master_channel = grpc::CreateChannel(master_address,
                                               grpc::InsecureChannelCredentials());
@@ -56,5 +59,5 @@ void run_worker()
 }
 
 int main() {
-    run_frontend_ping();
+    run_worker();
 }

@@ -6,7 +6,7 @@ metadata:
     app: master
 spec:
   ports:
-    - port: 80
+    - port: 50042
       name: master
   clusterIP: None # -> headless service -> DNS for each: master-service-0, master-service-1, ...
   selector:
@@ -32,7 +32,7 @@ spec:
         - name: blob-store
           image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest
           ports:
-            - containerPort: 50051 # needs to match the MASTER port
+            - containerPort: 50042 # needs to match the MASTER port
               name: master
           command: ["./build/bin/master_server"]
 #          volumeMounts:

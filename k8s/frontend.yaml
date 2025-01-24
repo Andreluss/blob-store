@@ -31,4 +31,7 @@ spec:
           image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest
           ports:
             - containerPort: 50042
-          command: ["./build/bin/master_server"]
+          command: ["./build/bin/frontend"]
+          env:
+            - name: MASTER_SERVICE
+              value: "master-0.master-service:5042"
