@@ -7,7 +7,7 @@
 
 void run_echo()
 {
-    const std::string server_address("0.0.0.0:50051");
+    const std::string server_address("0.0.0.0:50042");
     EchoServiceImpl service;
 
     grpc::ServerBuilder builder;
