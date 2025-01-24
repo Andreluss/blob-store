@@ -2,7 +2,8 @@
 #include <grpcpp/grpcpp.h>
 #include "services/worker_service.grpc.pb.h"
 #include "worker_service.hpp"
-
+#include "blob_hasher.hpp"
+#include "blob_file.hpp"
 
 class WorkerServiceTest : public ::testing::Test {
 protected:
@@ -35,7 +36,7 @@ protected:
 };
 
 /// Healthcheck RPC
-TEST_F(WorkerServiceTest, SimpleEcho) {
+TEST_F(WorkerServiceTest, Healthcheck) {
     worker::HealthcheckRequest request;
 
     worker::HealthcheckResponse response;
@@ -46,4 +47,51 @@ TEST_F(WorkerServiceTest, SimpleEcho) {
     EXPECT_TRUE(status.ok());
 }
 
+TEST_F(WorkerServiceTest, GetFreeStorage) {
+    std::filesystem::create_directory(BLOBS_PATH);
 
+    worker::GetFreeStorageRequest request;
+    worker::GetFreeStorageResponse response;
+
+    grpc::ClientContext context;
+    grpc::Status status = stub_->GetFreeStorage(&context, request, &response);
+
+    EXPECT_TRUE(status.ok());
+    std::cout << "Free storage: " << response.storage() << std::endl;
+    EXPECT_GT(response.storage(), 0);
+}
+
+TEST_F(WorkerServiceTest, SaveBlob) {
+    worker::SaveBlobRequest request;
+    worker::SaveBlobResponse response;
+
+    grpc::ClientContext context;
+    auto writer = stub_->SaveBlob(&context, &response);
+
+    std::string blob = "Hello, World!";
+
+    auto hasher = BlobHasher();
+    hasher.add_chunk(blob);
+    auto hash = hasher.finalize();
+
+    request.set_hash(hash);
+    request.set_chunk_data(blob);
+
+    std::cout << request.hash() << std::endl;
+    std::cout << request.chunk_data() << std::endl;
+
+    writer->Write(request);
+    writer->WritesDone();
+    grpc::Status status = writer->Finish();
+
+    BlobFile blob_file = BlobFile::Load(hash);
+    EXPECT_EQ(blob_file.size(), blob.size());
+
+    std::string written_blob;
+    for (auto chunk : blob_file) {
+        std::cout << chunk << '\n';
+        written_blob += chunk;
+    }
+
+    EXPECT_EQ(written_blob, blob);
+}
