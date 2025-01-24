@@ -138,11 +138,7 @@ TEST_F(WorkerServiceTest, MultiChunkSaveBlob) {
 
     std::string blob(1024*1024, 'a');
 
-    auto hasher = BlobHasher();
-    for (int i = 0; i < 10; ++i) {
-        hasher += blob;
-    }
-    auto hash = hasher.finalize();
+    auto hash = std::accumulate(begin(blob), begin(blob) + 10, BlobHasher(), [&](BlobHasher hasher, auto _){ return hasher += "bla"; }).finalize();
 
     for (int i = 0; i < 10; ++i) {
         request.set_hash(hash);
