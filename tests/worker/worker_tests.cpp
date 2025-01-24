@@ -35,7 +35,6 @@ protected:
     std::unique_ptr<worker::WorkerService::Stub> stub_;
 };
 
-/// Healthcheck RPC
 TEST_F(WorkerServiceTest, Healthcheck) {
     worker::HealthcheckRequest request;
 
@@ -62,13 +61,15 @@ TEST_F(WorkerServiceTest, GetFreeStorage) {
 }
 
 TEST_F(WorkerServiceTest, SaveBlob) {
+    std::filesystem::create_directory(BLOBS_PATH);
+
     worker::SaveBlobRequest request;
     worker::SaveBlobResponse response;
 
     grpc::ClientContext context;
     auto writer = stub_->SaveBlob(&context, &response);
 
-    std::string blob = "Hello, World!";
+    std::string blob = "Hello Huskies!";
 
     auto hasher = BlobHasher();
     hasher.add_chunk(blob);
@@ -77,9 +78,6 @@ TEST_F(WorkerServiceTest, SaveBlob) {
     request.set_hash(hash);
     request.set_chunk_data(blob);
 
-    std::cout << request.hash() << std::endl;
-    std::cout << request.chunk_data() << std::endl;
-
     writer->Write(request);
     writer->WritesDone();
     grpc::Status status = writer->Finish();
@@ -87,11 +85,53 @@ TEST_F(WorkerServiceTest, SaveBlob) {
     BlobFile blob_file = BlobFile::Load(hash);
     EXPECT_EQ(blob_file.size(), blob.size());
 
-    std::string written_blob;
-    for (auto chunk : blob_file) {
-        std::cout << chunk << '\n';
-        written_blob += chunk;
+    auto saved_blob = std::accumulate(blob_file.begin(), blob_file.end(), std::string());
+    EXPECT_EQ(saved_blob, blob);
+}
+
+TEST_F(WorkerServiceTest, GetBlob) {
+    std::filesystem::create_directory(BLOBS_PATH);
+    std::string message = "Skibidi sigma";
+
+    auto hasher = BlobHasher();
+    hasher.add_chunk(message);
+    auto hash = hasher.finalize();
+
+    auto blob_file = BlobFile::New(hash);
+    blob_file.append_chunk(message);
+
+    worker::GetBlobRequest request;
+    worker::GetBlobResponse response;
+
+    grpc::ClientContext context;
+    request.set_hash(hash);
+
+    auto reader = stub_->GetBlob(&context, request);
+    std::string response_blob;
+    while (reader->Read(&response)) {
+        response_blob += response.chunk_data();
     }
 
-    EXPECT_EQ(written_blob, blob);
+    EXPECT_EQ(response_blob, message);
+}
+
+TEST_F(WorkerServiceTest, DeleteBlob) {
+    std::filesystem::create_directory(BLOBS_PATH);
+    std::string message = "no more skibidi sigma";
+
+    auto hasher = BlobHasher();
+    hasher.add_chunk(message);
+    auto hash = hasher.finalize();
+
+    auto blob_file = BlobFile::New(hash);
+    blob_file.append_chunk(message);
+
+    worker::DeleteBlobRequest request;
+    request.set_hash(hash);
+
+    worker::DeleteBlobResponse response;
+    grpc::ClientContext context;
+
+    auto status = stub_->DeleteBlob(&context, request, &response);
+    EXPECT_TRUE(status.ok());
 }
