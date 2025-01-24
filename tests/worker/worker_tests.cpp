@@ -71,7 +71,7 @@ TEST_F(WorkerServiceTest, SaveBlob) {
     std::string blob = "Hello Huskies!";
 
     auto hash = (BlobHasher() += blob).finalize();
-    request.set_hash(hash);
+    request.set_blob_hash(hash);
     request.set_chunk_data(blob);
 
     writer->Write(request);
@@ -97,7 +97,7 @@ TEST_F(WorkerServiceTest, GetBlob) {
     worker::GetBlobResponse response;
 
     grpc::ClientContext context;
-    request.set_hash(hash);
+    request.set_blob_hash(hash);
 
     auto reader = stub_->GetBlob(&context, request);
     std::string response_blob;
@@ -117,7 +117,7 @@ TEST_F(WorkerServiceTest, DeleteBlob) {
     blob_file += message;
 
     worker::DeleteBlobRequest request;
-    request.set_hash(hash);
+    request.set_blob_hash(hash);
 
     worker::DeleteBlobResponse response;
     grpc::ClientContext context;
@@ -141,7 +141,7 @@ TEST_F(WorkerServiceTest, MultiChunkSaveBlob) {
     auto hash = std::accumulate(begin(blob), begin(blob) + 10, BlobHasher(), [&](BlobHasher hasher, auto _){ return hasher += "bla"; }).finalize();
 
     for (int i = 0; i < 10; ++i) {
-        request.set_hash(hash);
+        request.set_blob_hash(hash);
         request.set_chunk_data(blob);
         writer->Write(request);
     }
