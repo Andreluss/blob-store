@@ -2,6 +2,7 @@
 #include <fstream>
 #include <filesystem>
 #include <optional>
+#include <utility>
 #include "config.hpp"
 
 namespace fs = std::filesystem;
@@ -14,8 +15,8 @@ class BlobFile
 
     fs::path file_path_;
     uint64_t size_;
-    explicit BlobFile(const std::string& filename, const uint64_t size)
-        : file_path_(fs::path(BLOBS_PATH) / filename), size_(size)
+    explicit BlobFile(fs::path  path, const uint64_t size)
+        : file_path_(std::move(path)), size_(size)
     {
     }
 
@@ -95,8 +96,8 @@ public:
         }
     };
 
-    ChunkIterator begin() const { return ChunkIterator(file_path_, MAX_CHUNK_SIZE, 0); }
-    ChunkIterator end() const { return ChunkIterator(file_path_, MAX_CHUNK_SIZE, size()); }
+    ChunkIterator begin() const { return ChunkIterator(file_path_, size_, 0); }
+    ChunkIterator end() const { return ChunkIterator(file_path_, size_, size()); }
 
     /// Creates a NEW file for blob.
     /// Throws FileSystemException, if it couldn't open the file.
