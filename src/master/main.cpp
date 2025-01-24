@@ -1,5 +1,5 @@
-#include "echo_service.hpp"
 #include "master_service_mock.hpp"
+#include "echo_service.hpp"
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <iostream>
@@ -21,7 +21,8 @@ void run_echo()
 
 void run_mock()
 {
-    const std::string server_address("0.0.0.0:50051");
+    const std::string container_port = "50051";
+    const std::string server_address("0.0.0.0:" + container_port);
     MasterServiceMockImpl service;
 
     const auto server =
@@ -30,7 +31,7 @@ void run_mock()
         .RegisterService(&service)
         .BuildAndStart();
 
-    std::cout << "Master Mock listening on " << server_address << std::endl;
+    std::cout << "Master Mock listening on port " << container_port << std::endl;
     server->Wait();
 }
 

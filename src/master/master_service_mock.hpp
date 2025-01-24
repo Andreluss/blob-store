@@ -1,11 +1,13 @@
 #pragma once
+#include <string>
+#include <iostream>
 #include <services/master_service.grpc.pb.h>
 
 // master mock impl
 class MasterServiceMockImpl: public master::MasterService::Service
 {
 public:
-    ~MasterServiceMockImpl() override;
+    ~MasterServiceMockImpl() override {}
     grpc::Status Healthcheck(grpc::ServerContext* context, const master::HealthcheckRequest* request,
         master::HealthcheckResponse* response) override
     {

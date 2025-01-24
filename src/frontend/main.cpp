@@ -5,12 +5,14 @@
 #include <thread>
 #include <grpc++/grpc++.h>
 #include "utils.hpp"
+#include "environment.hpp"
 
 void run_frontend()
 {
-    std::cout << "DUPABRAKADABRA" << std::endl;
-    const std::string server_address("0.0.0.0:50042");
-    const std::string master_address = "0.0.0.0:50052"; // TODO: get this from env variable
+    const std::string container_port = "50042";
+    const std::string server_address = "0.0.0.0" + container_port;
+    const std::string master_address =
+        get_env_var("MASTER_ADDRESS").value_or("master-service");
 
     const auto master_channel =
         grpc::CreateChannel(master_address,grpc::InsecureChannelCredentials());
@@ -23,7 +25,8 @@ void run_frontend()
         .RegisterService(&frontend_service)
         .BuildAndStart();
 
-    std::cout << "Frontend service is running on " << server_address << std::endl;
+    std::cout << "Frontend service is running on port " << container_port << ", " << std::endl <<
+                 "master accessed at " << master_address << std::endl;
     server->Wait();
 }
 

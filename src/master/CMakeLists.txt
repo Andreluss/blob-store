@@ -11,6 +11,7 @@ add_library(${COMPONENT_NAME} STATIC
 target_include_directories(${COMPONENT_NAME} PUBLIC
         ${CMAKE_SOURCE_DIR}/protos
         ${CMAKE_SOURCE_DIR}/src/master
+        ${CMAKE_SOURCE_DIR}/src/common
 )
 
 # Link dependencies
