@@ -29,7 +29,7 @@ auto receive_blob_from_frontend(
         while (reader->Read(&request)) {
             if (request_hash.empty()) {
                 request_hash = request.hash();
-                blob_file = BlobFile::New(BLOBS_PATH + request_hash);
+                blob_file = BlobFile::New(request_hash);
             }
 
             blob_file->append_chunk(request.chunk_data());
@@ -51,7 +51,7 @@ auto receive_blob_from_frontend(
 auto send_blob_to_frontend(const worker::GetBlobRequest *request,
                            grpc::ServerWriter<worker::GetBlobResponse> *writer) -> Expected<std::monostate, grpc::Status> {
     try {
-        BlobFile blob_file = BlobFile::Load(BLOBS_PATH + request->hash());
+        BlobFile blob_file = BlobFile::Load(request->hash());
         for (auto chunk: blob_file) {
             worker::GetBlobResponse response;
             response.set_chunk_data(chunk);
