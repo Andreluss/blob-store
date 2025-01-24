@@ -3,13 +3,17 @@
 //
 
 #include <iostream>
+#include <thread>
+
 #include "worker_service.hpp"
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
+#include "services/frontend_service.grpc.pb.h"
 
 using namespace std;
 
-int main() {
+void run_worker()
+{
     const std::string server_address("0.0.0.0:50051");
     const std::string master_address = "127.0.0.1:50052";
 
@@ -25,6 +29,31 @@ int main() {
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     std::cout << "Worker service is running on " << server_address << std::endl;
     server->Wait();
+}
 
-    return 0;
+[[noreturn]] void run_frontend_ping()
+{
+    const std::string frontend_load_balancer_address {"34.118.107.27:31660"};
+    while (true) {
+        auto channel = grpc::CreateChannel(frontend_load_balancer_address, grpc::InsecureChannelCredentials());
+        const auto frontend_stub = frontend::Frontend::NewStub(std::move(channel));
+
+        // wait 1 second on current thread
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "Requesting HealthCheck...\n";
+
+        grpc::ClientContext client_ctx;
+        const frontend::HealthcheckRequest request;
+        frontend::HealthcheckResponse response;
+
+        if (const auto status = frontend_stub->HealthCheck(&client_ctx, request, &response); status.ok()) {
+            std::cout << status.ok() << " " << response.message() << std::endl;
+        } else {
+            std::cout << status.error_code() << " " << status.error_message() << std::endl;
+        }
+    }
+}
+
+int main() {
+    run_frontend_ping();
 }

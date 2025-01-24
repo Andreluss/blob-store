@@ -2,12 +2,14 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 #include <grpc++/grpc++.h>
 #include "utils.hpp"
 
-int main(int argc, char** argv) {
-    std::cerr << address_to_string(0x7f000001, 42) << " = 127.0.0.1:42\n";
-    const std::string server_address("0.0.0.0:50042");
+void run_frontend()
+{
+    std::cout << "DUPABRAKADABRA" << std::endl;
+    const std::string server_address("127.0.0.1:50042");
     const std::string master_address = "127.0.0.1:50052"; // TODO: get this from env variable
 
     const auto master_channel =
@@ -23,6 +25,10 @@ int main(int argc, char** argv) {
 
     std::cout << "Frontend service is running on " << server_address << std::endl;
     server->Wait();
+}
+
+int main(int argc, char** argv) {
+    run_frontend();
 
     return 0;
 }
