@@ -14,6 +14,7 @@ find_package(xxHash CONFIG REQUIRED)
 option(BUILD_FRONTEND "Build frontend component" ON)
 option(BUILD_MASTER "Build master component" ON)
 option(BUILD_WORKER "Build worker component" ON)
+option(BUILD_CLIENT "Build client component" ON)
 OPTION(ENABLE_TESTS "Builds tests" ON)
 
 # Add proto files first as they generate headers needed by other components
@@ -30,6 +31,10 @@ endif()
 
 if(BUILD_WORKER)
     add_subdirectory(src/worker)
+endif()
+
+if(BUILD_CLIENT)
+    add_subdirectory(src/client)
 endif()
 
 if(ENABLE_TESTS)
