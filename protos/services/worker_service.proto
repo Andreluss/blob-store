@@ -14,15 +14,12 @@ service WorkerService {
 
 message HealthcheckRequest {}
 
-message HealthcheckResponse {
-  string message = 1;
-}
+message HealthcheckResponse {}
 
 message GetFreeStorageRequest {}
 
 message GetFreeStorageResponse {
-  string message = 1;
-  uint64 storage = 2;
+  uint64 storage = 1;
 }
 
 message SaveBlobRequest {
@@ -30,9 +27,7 @@ message SaveBlobRequest {
     bytes chunk_data = 2;
 }
 
-message SaveBlobResponse {
-    string message = 1;
-}
+message SaveBlobResponse {}
 
 message GetBlobRequest {
     string hash = 1;
@@ -46,6 +41,4 @@ message DeleteBlobRequest {
     string hash = 1;
 }
 
-message DeleteBlobResponse {
-    string message = 1;
-}
+message DeleteBlobResponse {}

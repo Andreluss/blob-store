@@ -48,6 +48,4 @@ message DeleteBlobResponse {
 
 message HealthcheckRequest {}
 
-message HealthcheckResponse {
-  string message = 1;
-}
+message HealthcheckResponse {}
