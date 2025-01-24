@@ -13,6 +13,8 @@ auto get_free_storage() -> Expected<uint64_t, grpc::Status> {
     try {
         auto space = std::filesystem::space(BLOBS_PATH);
         return (uint64_t) space.free;
+        // TODO Mateusz: nie będzie tutaj wyjątku z BlobFile, jeśli już to
+        // std::filesystem::filesystem_error  https://en.cppreference.com/w/cpp/filesystem/space
     } catch (const BlobFile::FileSystemException &fse) {
         return grpc::Status(grpc::CANCELLED, fse.what());
     }
@@ -52,7 +54,8 @@ auto receive_blob_from_frontend(
 auto send_blob_to_frontend(const worker::GetBlobRequest *request,
                            grpc::ServerWriter<worker::GetBlobResponse> *writer) -> Expected<std::monostate, grpc::Status> {
     try {
-        BlobFile blob_file = BlobFile::New(BLOBS_PATH + request->hash());
+        // NOTE Mateusz: Brachu, BlobFile::New tworzy nowy plik (std::ios::trunc), dodałem funkcję Load.
+        BlobFile blob_file = BlobFile::Load(BLOBS_PATH + request->hash());
         for (auto chunk: blob_file) {
             worker::GetBlobResponse response;
             response.set_chunk_data(chunk);
@@ -101,8 +104,7 @@ grpc::Status WorkerServiceImpl::GetFreeStorage(grpc::ServerContext *context,
             })
             .output<grpc::Status>(
                     [](auto _) { return grpc::Status::OK; },
-                    [](auto error) { return error; }
-
+                    std::identity()
             );
 }
 
@@ -130,7 +132,7 @@ grpc::Status WorkerServiceImpl::SaveBlob(grpc::ServerContext *context,
             })
             .output<grpc::Status>(
                     [](auto _) { return grpc::Status::OK; },
-                    [](auto error) { return error; }
+                    std::identity()
             );
 }
 
@@ -141,7 +143,7 @@ grpc::Status WorkerServiceImpl::GetBlob(grpc::ServerContext *context,
     return send_blob_to_frontend(request, writer)
             .output<grpc::Status>(
                     [](auto _) { return grpc::Status::OK; },
-                    [](auto error) { return error; }
+                    std::identity()
             );
 }
 
@@ -152,7 +154,7 @@ grpc::Status WorkerServiceImpl::DeleteBlob(grpc::ServerContext *context,
     return delete_file(request->hash())
             .output<grpc::Status>(
                     [](auto _) { return grpc::Status::OK; },
-                    [](auto error) { return error; }
+                    std::identity()
             );
 }
 ///---- END WORKER SERVICE ----///
