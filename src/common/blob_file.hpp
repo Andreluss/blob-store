@@ -98,6 +98,7 @@ public:
     ChunkIterator begin() const { return ChunkIterator(file_path_, MAX_CHUNK_SIZE, 0); }
     ChunkIterator end() const { return ChunkIterator(file_path_, MAX_CHUNK_SIZE, size()); }
 
+    /// Creates a NEW file for blob.
     /// Throws FileSystemException, if it couldn't open the file.
     static BlobFile New(const fs::path& filename)
     {
@@ -112,6 +113,20 @@ public:
         file.close();
 
         return BlobFile(file_path, 0);
+    }
+
+    /// Loads the existing blob from the given filename.
+    /// Throws FileSystemException, if the file doesn't exist.
+    static BlobFile Load(const fs::path& filename)
+    {
+        fs::create_directories(BLOBS_PATH);
+        const fs::path file_path = BLOBS_PATH / filename;
+
+        if (not fs::exists(file_path)) {
+            throw FileSystemException("Failed to open file " + file_path.string());
+        }
+
+        return BlobFile(file_path, fs::file_size(file_path));
     }
 
     void append_chunk(const std::string& chunk)
