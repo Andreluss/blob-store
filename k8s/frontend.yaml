@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: frontend-service
 spec:
+  type: LoadBalancer # !!! by default its ClusterIP
   selector:
     app: frontend
   ports:
