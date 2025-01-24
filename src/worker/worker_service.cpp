@@ -1,5 +1,6 @@
 #include "worker_service.hpp"
 #include "blob_hasher.hpp"
+#include "blob_file.hpp"
 #include "expected.hpp"
 #include <filesystem>
 #include <fstream>
@@ -24,29 +25,34 @@ auto get_free_storage() -> Expected<uint64_t, std::string> {
     }
 }
 
-auto try_create_blob_file(const std::string &hash) {
-    auto filepath = BLOBS_PATH + hash;
+auto receive_blob_from_frontend(grpc::ServerReader<worker::SaveBlobRequest> *reader) -> Expected<std::string, grpc::Status> {
+    worker::SaveBlobRequest request;
 
-    std::ofstream outfile(filepath, std::ios::out);
-    if (!outfile) {
-        std::cerr << "Error: Unable to create file: " << filepath << '\n';
-        return false;
+    try {
+        BlobHasher blob_hasher;
+        std::optional<BlobFile> blob_file;
+        std::string request_hash;
+
+        while (reader->Read(&request)) {
+            if (request_hash.empty()) {
+                request_hash = request.hash();
+                blob_file = BlobFile::New(BLOBS_PATH + request_hash);
+            }
+
+            blob_file->append_chunk(request.chunk_data());
+            blob_hasher.add_chunk(request.chunk_data());
+        }
+
+        auto blob_hash = blob_hasher.finalize();
+        if (request_hash!= blob_hash) {
+            return grpc::Status(grpc::INVALID_ARGUMENT, "Blob hash mismatch.");
+        }
+
+        return blob_hash;
     }
-    outfile.close();
-    return true;
-}
-
-auto append_to_file(const std::string &hash, const std::string &data) {
-    auto filepath = BLOBS_PATH + hash;
-
-    std::ofstream outfile(filepath, std::ios::binary | std::ios::app);
-    if (!outfile) {
-        std::cerr << "Error: Unable to open file for appending: " << filepath << '\n';
-        return RetCode::ERROR_FILESYSTEM;
+    catch (const BlobFile::FileSystemException& fse) {
+        return grpc::Status(grpc::CANCELLED, fse.what());
     }
-    outfile.write(data.c_str(), (ssize_t) data.size());
-    outfile.close();
-    return RetCode::SUCCESS;
 }
 
 auto set_next_chunk(
@@ -110,7 +116,7 @@ grpc::Status WorkerServiceImpl::GetFreeStorage(grpc::ServerContext *context,
             return std::monostate{};
         })
         .output<grpc::Status>(
-            [](auto _) {return grpc::Status::OK;},
+            [](auto _) { return grpc::Status::OK; },
             [&](auto &error) {
                 response->set_message(error);
                 return grpc::Status::CANCELLED;
@@ -121,62 +127,30 @@ grpc::Status WorkerServiceImpl::GetFreeStorage(grpc::ServerContext *context,
 grpc::Status WorkerServiceImpl::SaveBlob(grpc::ServerContext *context,
                                          grpc::ServerReader<worker::SaveBlobRequest> *reader,
                                          worker::SaveBlobResponse *response) {
-    worker::SaveBlobRequest request;
-    bool created_file = false;
-    BlobHasher blob_hasher;
 
-    auto create_file_if_needed = [&](const std::string &filename) -> RetCode {
-        if (not created_file) {
-            if (not try_create_blob_file(filename)) {
-                return RetCode::ERROR_FILESYSTEM;
+    return receive_blob_from_frontend(reader)
+        .and_then([&](const std::string &hash) -> Expected<std::monostate, grpc::Status> {
+            master::NotifyBlobSavedRequest notify_request;
+            notify_request.set_workderid("workerId");
+            notify_request.set_blobid(hash);
+
+            grpc::ClientContext client_context;
+            master::NotifyBlobSavedResponse notify_response;
+
+            auto status = master_stub_->NotifyBlobSaved(&client_context, notify_request,
+                                                        &notify_response);
+
+            if (status.ok()) {
+                return std::monostate{};
             }
-            created_file = true;
-        }
-        return RetCode::SUCCESS;
-    };
-
-    while (reader->Read(&request)) {
-        if (create_file_if_needed(request.hash()) == RetCode::ERROR_FILESYSTEM) {
-            response->set_message("Error while creating file.");
-            return grpc::Status::CANCELLED;
-        }
-
-        blob_hasher.add_chunk(request.chunk_data());
-
-        if (append_to_file(request.hash(), request.chunk_data()) == RetCode::ERROR_FILESYSTEM) {
-            response->set_message("Error appending bytes to file.");
-            delete_file(request.hash());
-            return grpc::Status::CANCELLED;
-        }
-    }
-
-    if (blob_hasher.finalize() != request.hash()) {
-        response->set_message("Error: Hash mismatch.");
-        return grpc::Status::CANCELLED;
-    }
-
-    auto notify_master = [&]() -> grpc::Status {
-        master::NotifyBlobSavedRequest notify_request;
-        notify_request.set_workderid("workerId");
-        notify_request.set_blobid(request.hash());
-
-        grpc::ClientContext client_context;
-        master::NotifyBlobSavedResponse notify_response;
-
-        auto status = master_stub_->NotifyBlobSaved(&client_context, notify_request,
-                                                    &notify_response);
-        if (!status.ok()) {
-            std::cerr << "Error: " << status.error_message() << '\n';
-            response->set_message("Error notifying master.");
-            return grpc::Status::CANCELLED;
-        }
-        else {
-            response->set_message("OK");
-            return grpc::Status::OK;
-        }
-    };
-
-    return notify_master();
+            else {
+                return grpc::Status(grpc::CANCELLED, status.error_message());
+            }
+        })
+        .output<grpc::Status>(
+            [](auto _) { return grpc::Status::OK; },
+            [&](auto &error) { return grpc::Status::CANCELLED; }
+        );
 }
 
 grpc::Status WorkerServiceImpl::GetBlob(grpc::ServerContext *context,
