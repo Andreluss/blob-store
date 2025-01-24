@@ -38,6 +38,7 @@ auto receive_blob_from_frontend(
 
         auto blob_hash = blob_hasher.finalize();
         if (request_hash != blob_hash) {
+            blob_file->remove();
             return grpc::Status(grpc::INVALID_ARGUMENT, "Blob hash mismatch.");
         }
 

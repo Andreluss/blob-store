@@ -136,9 +136,10 @@ TEST_F(WorkerServiceTest, MultiChunkSaveBlob) {
     grpc::ClientContext context;
     auto writer = stub_->SaveBlob(&context, &response);
 
-    std::string blob(1024*1024, 'a');
+    std::string blob(1024 * 1024, 'a');
 
-    auto hash = std::accumulate(begin(blob), begin(blob) + 10, BlobHasher(), [&](BlobHasher hasher, auto _){ return hasher += "bla"; }).finalize();
+    auto hash = std::accumulate(begin(blob), begin(blob) + 10, BlobHasher(),
+                                [&](BlobHasher hasher, auto _) { return hasher += blob; }).finalize();
 
     for (int i = 0; i < 10; ++i) {
         request.set_blob_hash(hash);
@@ -152,4 +153,8 @@ TEST_F(WorkerServiceTest, MultiChunkSaveBlob) {
     EXPECT_EQ(blob_file.size(), 10 * blob.size());
     auto saved_blob = std::accumulate(blob_file.begin(), blob_file.end(), std::string());
     EXPECT_EQ(saved_blob, std::string(10 * blob.size(), 'a'));
+
+    // We want to check, if the worker failed while connecting to master.
+    auto failed_on_connection = status.error_message().find("Connection refused") != std::string::npos;
+    EXPECT_TRUE(failed_on_connection);
 }
