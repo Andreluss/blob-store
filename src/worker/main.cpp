@@ -48,7 +48,7 @@ void run_worker()
         frontend::HealthcheckResponse response;
 
         if (const auto status = frontend_stub->HealthCheck(&client_ctx, request, &response); status.ok()) {
-            std::cout << status.ok() << " " << response.message() << std::endl;
+            std::cout << status.ok() << " | Frontend Ping OK " << std::endl;
         } else {
             std::cout << status.error_code() << " " << status.error_message() << std::endl;
         }
