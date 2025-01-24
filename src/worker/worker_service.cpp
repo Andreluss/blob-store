@@ -3,7 +3,6 @@
 #include "blob_file.hpp"
 #include "expected.hpp"
 #include <filesystem>
-#include <fstream>
 #include <grpcpp/grpcpp.h>
 #include "services/worker_service.grpc.pb.h"
 #include "services/master_service.grpc.pb.h"
@@ -13,9 +12,7 @@ auto get_free_storage() -> Expected<uint64_t, grpc::Status> {
     try {
         auto space = std::filesystem::space(BLOBS_PATH);
         return (uint64_t) space.free;
-        // TODO Mateusz: nie będzie tutaj wyjątku z BlobFile, jeśli już to
-        // std::filesystem::filesystem_error  https://en.cppreference.com/w/cpp/filesystem/space
-    } catch (const BlobFile::FileSystemException &fse) {
+    } catch (const std::filesystem::filesystem_error &fse) {
         return grpc::Status(grpc::CANCELLED, fse.what());
     }
 }
@@ -32,11 +29,11 @@ auto receive_blob_from_frontend(
         while (reader->Read(&request)) {
             if (request_hash.empty()) {
                 request_hash = request.hash();
-                blob_file = BlobFile::New(BLOBS_PATH + request_hash);
+                blob_file = BlobFile::New(request_hash);
             }
 
-            blob_file->append_chunk(request.chunk_data());
-            blob_hasher.add_chunk(request.chunk_data());
+            *blob_file += request.chunk_data();
+            blob_hasher += request.chunk_data();
         }
 
         auto blob_hash = blob_hasher.finalize();
@@ -54,7 +51,7 @@ auto receive_blob_from_frontend(
 auto send_blob_to_frontend(const worker::GetBlobRequest *request,
                            grpc::ServerWriter<worker::GetBlobResponse> *writer) -> Expected<std::monostate, grpc::Status> {
     try {
-        BlobFile blob_file = BlobFile::Load(BLOBS_PATH + request->hash());
+        BlobFile blob_file = BlobFile::Load(request->hash());
         for (auto chunk: blob_file) {
             worker::GetBlobResponse response;
             response.set_chunk_data(chunk);

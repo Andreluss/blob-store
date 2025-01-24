@@ -34,6 +34,11 @@ public:
         }
     }
 
+    BlobHasher& operator+=(const std::string& chunk) {
+        add_chunk(chunk);
+        return *this;
+    }
+
     /// Return the hash of all data. Call ONLY ONCE per object.
     /// typedef uint64_t XXH64_hash_t;
     std::string finalize() {
