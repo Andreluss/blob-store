@@ -34,3 +34,16 @@ Wybrać dla niego toolchain: nasz docker i dodać opcje CMake:
 2. Wejść w src/master/main.cpp
 3. Zbuildować go za pomocą IDE (lub uruchomić)
 4. Po tych krokach IDE nie powinno podświetlać niczego na czerwono w kodzie, a program powinien się uruchamiać.
+
+## Kubernetes
+### Nasz config:
+- klaster z image registry: `europe-central2-docker.pkg.dev`
+- nasz blob image registry: `europe-central2-docker.pkg.dev/blobs69/blob-repository`
+- nazwa dockerimage: `blob-store` (tag: `latest`)
+### Na początku
+`gcloud auth configure-docker europe-central2-docker.pkg.dev`
+### Po wprowadzeniu zmian
+1. Po wprowadzeniu zmian `./dev.sh build-image`
+   - wynik można podejrzeć w `docker images`
+2. `docker tag blob-store europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest`
+3. `docker push europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest`
