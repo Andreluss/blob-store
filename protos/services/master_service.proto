@@ -24,7 +24,7 @@ message GetWorkersToSaveBlobRequest {
 }
 
 message GetWorkersToSaveBlobResponse {
-  bool success = 1;
+  bool success = 1; // TODO Mateusz: to też możemy usunąć, bo do sprawdzenia mamy status.ok()
   repeated common.ipv4Address addresses = 2; // repeated = array
 }
 
@@ -42,7 +42,7 @@ message GetWorkerWithBlobRequest {
 }
 
 message GetWorkerWithBlobResponse {
-  bool success = 1;
+  bool success = 1; // TODO Mateusz: same here
   common.ipv4Address addresses = 2;
 }
 
@@ -52,5 +52,5 @@ message DeleteBlobRequest {
 }
 
 message DeleteBlobResponse {
-  bool success = 1;
+  bool success = 1; // TODO Mateusz: same here
 }
