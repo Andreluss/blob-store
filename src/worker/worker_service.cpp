@@ -13,9 +13,7 @@ auto get_free_storage() -> Expected<uint64_t, grpc::Status> {
     try {
         auto space = std::filesystem::space(BLOBS_PATH);
         return (uint64_t) space.free;
-        // TODO Mateusz: nie będzie tutaj wyjątku z BlobFile, jeśli już to
-        // std::filesystem::filesystem_error  https://en.cppreference.com/w/cpp/filesystem/space
-    } catch (const BlobFile::FileSystemException &fse) {
+    } catch (const std::filesystem::filesystem_error &fse) {
         return grpc::Status(grpc::CANCELLED, fse.what());
     }
 }
