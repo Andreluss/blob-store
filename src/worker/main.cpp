@@ -22,11 +22,12 @@ void run_worker()
 
     WorkerServiceImpl worker_service(master_channel);
 
-    grpc::ServerBuilder builder;
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&worker_service);
+    const auto server =
+        grpc::ServerBuilder()
+            .AddListeningPort(server_address, grpc::InsecureServerCredentials())
+            .RegisterService(&worker_service)
+            .BuildAndStart();
 
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     std::cout << "Worker service is running on " << server_address << std::endl;
     server->Wait();
 }

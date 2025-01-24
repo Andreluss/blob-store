@@ -113,9 +113,6 @@ auto get_workers_from_master(std::string blob_hash, const std::unique_ptr<master
                                                               &get_workers_response); !status.ok()) {
         return grpc::Status(grpc::CANCELLED, status.error_message());
     }
-    if (!get_workers_response.success()) {
-        return grpc::Status(grpc::CANCELLED, get_workers_response.message());
-    }
 
     return get_workers_response.addresses();
 }
@@ -130,9 +127,6 @@ auto get_worker_with_blob_id(const auto& master_stub_, std::string blob_id)
     master_stub_->GetWorkerWithBlob(&client_context, request, &response);
     if (const auto status = master_stub_->GetWorkerWithBlob(&client_context, request, &response); !status.ok()) {
         return status.error_message();
-    }
-    if (!response.success()) {
-        return response.message();
     }
     auto actually_one_address = response.addresses();
     return actually_one_address;
@@ -183,7 +177,7 @@ static auto f_const(C const_value){
 grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const frontend::GetBlobRequest* request,
                                           grpc::ServerWriter<frontend::GetBlobResponse>* writer)
 {
-    const auto blob_id = request->hash();
+    const auto& blob_id = request->hash();
 
     return get_worker_with_blob_id(master_stub_, blob_id)
     .and_then([&](const common::ipv4Address& worker_address)->Expected<std::monostate, std::string> {
@@ -204,7 +198,7 @@ grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const fr
 
     .output<grpc::Status>(
         f_const(grpc::Status::OK),
-        [](auto error_str) { return grpc::Status(grpc::StatusCode::CANCELLED, error_str); }
+        [](const auto& error_str) { return grpc::Status(grpc::StatusCode::CANCELLED, error_str); }
     );
 }
 
@@ -223,16 +217,12 @@ grpc::Status FrontendServiceImpl::DeleteBlob(grpc::ServerContext* context, const
         return grpc::Status::CANCELLED;
     }
 
-    response->set_delete_result(master_response.message());
-    if (not master_response.success()) {
-        return grpc::Status(grpc::StatusCode::CANCELLED, "Failed to delete blob");
-    }
+    response->set_delete_result("Blob deleted successfully.");
     return grpc::Status::OK;
 }
 
 grpc::Status FrontendServiceImpl::HealthCheck(grpc::ServerContext* context, const frontend::HealthcheckRequest* request,
     frontend::HealthcheckResponse* response)
 {
-    response->set_message("Frontend healthcheck: OK");
     return grpc::Status::OK;
 }

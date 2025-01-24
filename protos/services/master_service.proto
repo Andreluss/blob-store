@@ -24,9 +24,7 @@ message GetWorkersToSaveBlobRequest {
 }
 
 message GetWorkersToSaveBlobResponse {
-  bool success = 1;
-  string message = 2;  // Place for eventual error messages
-  repeated common.ipv4Address addresses = 3; // repeated = array
+  repeated common.ipv4Address addresses = 1; // repeated = array
 }
 
 // Message send by worker to notify successful saving of blob
@@ -43,9 +41,7 @@ message GetWorkerWithBlobRequest {
 }
 
 message GetWorkerWithBlobResponse {
-  bool success = 1;
-  string message = 2;  // Place for eventual error messages
-  common.ipv4Address addresses = 3;
+  common.ipv4Address addresses = 1;
 }
 
 // Message send by frontend to request deletion of a blob
@@ -53,7 +49,4 @@ message DeleteBlobRequest {
   string blobId = 1;
 }
 
-message DeleteBlobResponse {
-  bool success = 1;
-  string message = 2;   // Place for eventual error messages
-}
+message DeleteBlobResponse {}
