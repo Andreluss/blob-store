@@ -3,7 +3,6 @@
 #include "blob_file.hpp"
 #include "expected.hpp"
 #include <filesystem>
-#include <fstream>
 #include <grpcpp/grpcpp.h>
 #include "services/worker_service.grpc.pb.h"
 #include "services/master_service.grpc.pb.h"
