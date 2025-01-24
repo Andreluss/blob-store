@@ -21,6 +21,7 @@ show_help() {
     echo "  run-worker  - Run the worker service"
     echo "  test        - Run tests"
     echo "  clean       - Clean build directory"
+    echo "  push-docker - Build and push container image to registry"
     echo "  help        - Show this help message"
 }
 
@@ -88,6 +89,14 @@ run_worker() {
     ./build/bin/worker
 }
 
+push_docker() {
+    build_image || { echo "Build failed"; return 1; }
+    docker tag blob-store europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:v1.0.70 && \
+    docker push europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:v1.0.70 || {
+      echo "Docker push failed"; return 1;
+    }
+}
+
 run_tests() {
     docker run --rm -it \
         -v $(pwd):${WORKDIR_PATH} \
@@ -120,6 +129,9 @@ case "$1" in
         ;;
     "run-worker")
         run_worker
+        ;;
+    "push-docker")
+        push_docker
         ;;
     "test")
         run_tests

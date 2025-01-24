@@ -30,7 +30,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: blob-store
-          image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:v1.0.69
+          image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:v1.0.70
           ports:
             - containerPort: 50042 # needs to match the MASTER port
               name: master
