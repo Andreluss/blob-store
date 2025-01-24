@@ -54,7 +54,6 @@ auto receive_blob_from_frontend(
 auto send_blob_to_frontend(const worker::GetBlobRequest *request,
                            grpc::ServerWriter<worker::GetBlobResponse> *writer) -> Expected<std::monostate, grpc::Status> {
     try {
-        // NOTE Mateusz: Brachu, BlobFile::New tworzy nowy plik (std::ios::trunc), dodałem funkcję Load.
         BlobFile blob_file = BlobFile::Load(BLOBS_PATH + request->hash());
         for (auto chunk: blob_file) {
             worker::GetBlobResponse response;

@@ -11,7 +11,6 @@ public:
         grpc::ServerContext* context,
         const master::GetWorkersToSaveBlobRequest* request,
         master::GetWorkersToSaveBlobResponse* response) override {
-        response->set_message(request->blobid());
         return grpc::Status::OK;
     }
     grpc::Status GetWorkerWithBlob(
