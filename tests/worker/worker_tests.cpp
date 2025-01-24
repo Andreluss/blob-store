@@ -133,7 +133,36 @@ TEST_F(WorkerServiceTest, DeleteBlob) {
 
     auto status = stub_->DeleteBlob(&context, request, &response);
     EXPECT_TRUE(status.ok());
-    // TODO Mateusz: make sure the file doesn't exist
+    EXPECT_FALSE(std::filesystem::exists(BLOBS_PATH + hash));
 }
 
-// TODO Mateusz: Test multi-chunk operation
+TEST_F(WorkerServiceTest, MultiChunkSaveBlob) {
+    std::filesystem::create_directory(BLOBS_PATH);
+
+    worker::SaveBlobRequest request;
+    worker::SaveBlobResponse response;
+
+    grpc::ClientContext context;
+    auto writer = stub_->SaveBlob(&context, &response);
+
+    std::string blob(1024*1024, 'a');
+
+    auto hasher = BlobHasher();
+    for (int i = 0; i < 10; ++i) {
+        hasher.add_chunk(blob);
+    }
+    auto hash = hasher.finalize();
+
+    for (int i = 0; i < 10; ++i) {
+        request.set_hash(hash);
+        request.set_chunk_data(blob);
+        writer->Write(request);
+    }
+    writer->WritesDone();
+    grpc::Status status = writer->Finish();
+
+    BlobFile blob_file = BlobFile::Load(hash);
+    EXPECT_EQ(blob_file.size(), 10 * blob.size());
+    auto saved_blob = std::accumulate(blob_file.begin(), blob_file.end(), std::string());
+    EXPECT_EQ(saved_blob, std::string(10 * blob.size(), 'a'));
+}
