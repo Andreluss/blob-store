@@ -4,9 +4,10 @@
 #include <string>
 #include <grpc++/grpc++.h>
 #include "utils.hpp"
+#include "logging.hpp"
 
 int main(int argc, char** argv) {
-    std::cerr << address_to_string(0x7f000001, 42) << " = 127.0.0.1:42\n";
+    Logger::info(address_to_string(0x7f000001, 42), " = 127.0.0.1:42");
     const std::string server_address("0.0.0.0:50042");
     const std::string master_address = "127.0.0.1:50052"; // TODO: get this from env variable
 
@@ -21,7 +22,7 @@ int main(int argc, char** argv) {
         .RegisterService(&frontend_service)
         .BuildAndStart();
 
-    std::cout << "Frontend service is running on " << server_address << std::endl;
+    Logger::info("Frontend service is running on ", server_address);
     server->Wait();
 
     return 0;
