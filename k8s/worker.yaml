@@ -31,6 +31,7 @@ spec:
       containers:
         - name: blob-store
           image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:v1.0.70
+          imagePullPolicy: Always
           ports:
             - containerPort: 50042 # needs to match the worker port
               name: worker
