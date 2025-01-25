@@ -35,6 +35,5 @@ void run_worker(const WorkerConfig& config)
 }
 
 int main() {
-    std::cout << "asfasdfsadfasdf" << std::endl;
     run_worker(WorkerConfig::LoadFromEnv());
 }
