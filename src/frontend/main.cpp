@@ -2,7 +2,6 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <thread>
 #include <grpc++/grpc++.h>
 #include "network_utils.hpp"
 #include "environment.hpp"
@@ -24,8 +23,7 @@ void run_frontend(const FrontendConfig& config)
         .RegisterService(&frontend_service)
         .BuildAndStart();
 
-    std::cout << "Frontend service is running on port " << container_port << ", " << std::endl <<
-                 "master accessed at " << master_address << std::endl;
+    Logger::info("Frontend service is running on ", server_address);
     server->Wait();
 }
 

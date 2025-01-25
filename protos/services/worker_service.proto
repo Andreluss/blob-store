@@ -23,22 +23,22 @@ message GetFreeStorageResponse {
 }
 
 message SaveBlobRequest {
-    string hash = 1;
-    bytes chunk_data = 2;
+  string blob_hash = 1;
+  bytes chunk_data = 2;
 }
 
 message SaveBlobResponse {}
 
 message GetBlobRequest {
-    string hash = 1;
+  string blob_hash = 1;
 }
 
 message GetBlobResponse {
-    bytes chunk_data = 1;
+  bytes chunk_data = 1;
 }
 
 message DeleteBlobRequest {
-    string hash = 1;
+  string blob_hash = 1;
 }
 
 message DeleteBlobResponse {}
