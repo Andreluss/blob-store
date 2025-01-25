@@ -17,7 +17,12 @@ class WorkerServiceImpl final : public worker::WorkerService::Service {
     std::unique_ptr<master::MasterService::Stub> master_stub_;
 public:
     explicit WorkerServiceImpl(const std::shared_ptr<grpc::Channel>& channel)
-            : master_stub_(master::MasterService::NewStub(channel)) {}
+            : master_stub_(master::MasterService::NewStub(channel))
+    {
+            std::filesystem::create_directories(BLOBS_PATH);
+            // print pwd
+            std::cout << "Current path is " << std::filesystem::current_path() << '\n';
+    }
 
     grpc::Status Healthcheck(
             grpc::ServerContext *context,
