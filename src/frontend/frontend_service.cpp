@@ -152,6 +152,7 @@ grpc::Status FrontendServiceImpl::UploadBlob(grpc::ServerContext* context,
     .and_then([&](const auto& workers)->Expected<int, grpc::Status>{
 
     for (const auto& worker_address : workers) {
+        std::cout << "Sending blob to worker at " << address_to_string(worker_address) << std::endl;
         auto send_blob_result = send_blob_to_worker(blob_file, blob_hash, worker_address);
         if (not send_blob_result.has_value()) {
             return grpc::Status(grpc::CANCELLED, send_blob_result.error());

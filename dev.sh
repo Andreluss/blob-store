@@ -91,8 +91,8 @@ run_worker() {
 
 push_docker() {
     build_image || { echo "Build failed"; return 1; }
-    docker tag blob-store europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:v1.0.70 && \
-    docker push europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:v1.0.70 || {
+    docker tag blob-store europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest && \
+    docker push europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest || {
       echo "Docker push failed"; return 1;
     }
 }

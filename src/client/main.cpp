@@ -33,9 +33,10 @@ void run_frontend_ping(const std::string frontend_load_balancer_address)
     }
 }
 
-[[noreturn]] void run_frontend_upload_blob(const std::string frontend_load_balancer_address)
+void run_frontend_upload_blob(const std::string frontend_load_balancer_address)
 {
-    while (true) {
+    int c = 1;
+    while (c--) {
         auto channel = grpc::CreateChannel(frontend_load_balancer_address, grpc::InsecureChannelCredentials());
         const auto frontend_stub = frontend::Frontend::NewStub(std::move(channel));
 

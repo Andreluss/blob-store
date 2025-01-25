@@ -22,7 +22,9 @@ public:
     {
         std::cout << "Getting workers to save blob " << request->blobid() << std::endl;
         for (const auto& worker: config.workers) {
-            auto* worker_address = response->add_addresses();
+            std::cout << "Worker: " << worker << std::endl;
+            auto worker_address = response->add_addresses();
+            std::cout << "Worker address: " << worker_address << std::endl;
             auto x = address_of_string(worker);
             std::cout << "Worker address: " << x.address() << " " << x.port() << std::endl;
             worker_address->set_address(x.address());
