@@ -6,6 +6,7 @@
 #include <grpcpp/server_builder.h>
 #include <iostream>
 #include <services/master_service.grpc.pb.h>
+#include "network_utils.hpp"
 
 void run_echo()
 {
@@ -25,7 +26,7 @@ void run_mock(const MasterConfig& config)
 {
     const std::string container_port = std::to_string(config.container_port);
     const std::string server_address("0.0.0.0:" + container_port);
-    MasterServiceMockImpl service;
+    MasterServiceMockImpl service(config);
 
     const auto server =
         grpc::ServerBuilder()

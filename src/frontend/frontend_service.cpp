@@ -1,5 +1,5 @@
 #include "frontend_service.hpp"
-#include "utils.hpp"
+#include "network_utils.hpp"
 #include "expected.hpp"
 #include "blob_hasher.hpp"
 #include "blob_file.hpp"

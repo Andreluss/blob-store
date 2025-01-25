@@ -4,7 +4,7 @@
 #include <string>
 #include <thread>
 #include <grpc++/grpc++.h>
-#include "utils.hpp"
+#include "network_utils.hpp"
 #include "environment.hpp"
 
 void run_frontend(const FrontendConfig& config)
