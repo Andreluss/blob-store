@@ -7,6 +7,7 @@
 #include <iostream>
 #include <services/master_service.grpc.pb.h>
 #include "network_utils.hpp"
+using namespace std::string_literals;
 
 void run_echo()
 {
