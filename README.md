@@ -37,13 +37,34 @@ Wybrać dla niego toolchain: nasz docker i dodać opcje CMake:
 
 ## Kubernetes
 ### Nasz config:
+- klaster z blob-store: `blobs-cluster` region: `europe-central2`
 - klaster z image registry: `europe-central2-docker.pkg.dev`
-- nasz blob image registry: `europe-central2-docker.pkg.dev/blobs69/blob-repository`
-- nazwa dockerimage: `blob-store` (tag: `latest`)
+- registry image repo: `europe-central2-docker.pkg.dev/blobs69/blob-repository`
+- nazwa dockerimage: `blob-store` (tag: `latest` albo `v1.0.70`)
 ### Na początku
-`gcloud auth configure-docker europe-central2-docker.pkg.dev`
+```
+gcloud auth configure-docker europe-central2-docker.pkg.dev
+gcloud container clusters get-credentials blobs-cluster --region europe-central2
+
+kubectl get pods # powinno działać
+``` 
+
 ### Po wprowadzeniu zmian
-1. Po wprowadzeniu zmian `./dev.sh build-image`
-   - wynik można podejrzeć w `docker images`
-2. `docker tag blob-store europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest`
-3. `docker push europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest`
+1. Po wprowadzeniu zmian build i push do registry (Local - CLion):
+   ```
+   ./dev.sh push-docker
+   ```
+2. Reloadowanie wszystkiego (GCloud):
+   ```
+   kubectl delete all --all
+   ```
+3. Stawianie mastera (GCloud):
+   ```
+   cd /path/to/k8s/configs # można pobrać z repo 
+   kubectl apply -f master.yaml
+   ```
+4. Poczekać chwilę i odpalić resztę:
+   ```
+   kubectl apply -f frontend.yaml
+   kubectl apply -f worker.yaml
+   ```
