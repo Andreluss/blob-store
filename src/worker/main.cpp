@@ -11,25 +11,17 @@
 
 using namespace std;
 
-void run_worker()
+void run_worker(const WorkerConfig& config)
 {
-    const std::string server_address("0.0.0.0:50042");
-    const std::string master_address =
-        get_env_var(ENV_MASTER_SERVICE)
-        .value_or("master-service-0.master-service");
-    const std::string worker_hostname = [&]()
-    {
-        if (auto hostname = get_env_var(ENV_HOSTNAME_SELF); hostname)
-            return hostname;
-        const auto msg = std::string("Worker hostname not set - env ") + ENV_HOSTNAME_SELF + " doesn't exist."
-        throw std::runtime_error(msg);
-    };
-    std::cout << "Worker hostname: " << worker_hostname << std::endl;
+    const std::string container_port = std::to_string(config.container_port);
+    const std::string master_service_address = config.master_service;
+    const std::string worker_service_address = config.my_service_address;
+    std::cout << "This worker service address: " << worker_service_address << std::endl;
+    std::cout << "Master service address: " << master_service_address << std::endl;
 
-
-    auto master_channel = grpc::CreateChannel(master_address,
+    const std::string server_address("0.0.0.0:" + container_port);
+    const auto master_channel = grpc::CreateChannel(master_service_address,
                                               grpc::InsecureChannelCredentials());
-
     WorkerServiceImpl worker_service(master_channel);
 
     const auto server =
@@ -38,10 +30,10 @@ void run_worker()
             .RegisterService(&worker_service)
             .BuildAndStart();
 
-    std::cout << "Worker service is running on " << server_address << std::endl;
+    std::cout << "Worker service is running with container port " << container_port << std::endl;
     server->Wait();
 }
 
 int main() {
-    run_worker();
+    run_worker(WorkerConfig::LoadFromEnv());
 }

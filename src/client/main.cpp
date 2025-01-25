@@ -93,8 +93,16 @@ void run_frontend_ping(const std::string frontend_load_balancer_address)
     }
 }
 
-int main() {
-    const std::string address = "34.118.56.20:50042";
-    run_frontend_ping(address);
-    run_frontend_upload_blob(address);
+int main(const int argc, char** argv) {
+    // read the frontend (load-balances) address from the command line
+    const std::string frontend_address = [&] {
+        if (argc < 2) {
+            std::cerr << "Usage: " + std::string(argv[0]) + " <frontend_address>:<port>" << std::endl;
+            exit(1);
+        }
+        return std::string(argv[1]);
+    }();
+    std::cout << "Client will connect to frontend at " << frontend_address << std::endl;
+    run_frontend_ping(frontend_address);
+    run_frontend_upload_blob(frontend_address);
 }

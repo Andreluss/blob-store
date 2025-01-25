@@ -7,12 +7,11 @@
 #include "utils.hpp"
 #include "environment.hpp"
 
-void run_frontend()
+void run_frontend(const FrontendConfig& config)
 {
-    const std::string container_port = "50042";
+    const std::string container_port = std::to_string(config.container_port);
     const std::string server_address = "0.0.0.0:" + container_port;
-    const std::string master_address =
-        get_env_var(ENV_MASTER_SERVICE).value_or("master-service");
+    const std::string master_address = config.master_service;
 
     const auto master_channel =
         grpc::CreateChannel(master_address,grpc::InsecureChannelCredentials());
@@ -30,8 +29,9 @@ void run_frontend()
     server->Wait();
 }
 
-int main(int argc, char** argv) {
-    run_frontend();
+int main() {
+    const auto config = FrontendConfig::LoadFromEnv();
+    run_frontend(config);
 
     return 0;
 }
