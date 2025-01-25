@@ -35,7 +35,7 @@ spec:
           ports:
             - containerPort: 50042 # needs to match the worker port
               name: worker
-          command: ["./build/bin/worker"]
+          command: ["./build/bin/worker_server"]
           env:
             - name: MASTER_SERVICE
               value: "master-0.master-service:50042"

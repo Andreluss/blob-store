@@ -19,8 +19,9 @@ target_link_libraries(${COMPONENT_NAME} PUBLIC
 
 add_executable(worker_server main.cpp)
 target_link_libraries(worker_server PRIVATE ${COMPONENT_NAME})
+
 # Set output directory
-set_target_properties(${COMPONENT_NAME}
+set_target_properties(worker_server
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
