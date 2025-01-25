@@ -89,7 +89,7 @@ auto delete_file(const std::string &hash) -> Expected<std::monostate, grpc::Stat
         }
 
         std::filesystem::remove(filepath);
-        Logger::info("Blob deleted successfylly: ", filepath);
+        Logger::info("Blob deleted successfully: ", filepath);
         return std::monostate{};
     }
     catch (const BlobFile::FileSystemException &fse) {
