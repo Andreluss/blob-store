@@ -10,4 +10,5 @@ static std::optional<std::string> get_env_var(const std::string& varName) {
     return std::nullopt; // Return empty optional if not found
 }
 
+constexpr static auto ENV_HOSTNAME_SELF = "HOSTNAME";
 constexpr static auto ENV_MASTER_SERVICE = "MASTER_SERVICE";

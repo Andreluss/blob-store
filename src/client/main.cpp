@@ -94,6 +94,7 @@ void run_frontend_ping(const std::string frontend_load_balancer_address)
 }
 
 int main() {
-    run_frontend_ping("34.118.88.122:50042");
-    run_frontend_upload_blob("34.118.88.122:50042");
+    const std::string address = "34.118.56.20:50042";
+    run_frontend_ping(address);
+    run_frontend_upload_blob(address);
 }

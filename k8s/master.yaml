@@ -7,6 +7,7 @@ metadata:
 spec:
   ports:
     - port: 50042
+      targetPort: 50042
       name: master
   clusterIP: None # -> headless service -> DNS for each: master-service-0, master-service-1, ...
   selector:

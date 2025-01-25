@@ -6,8 +6,8 @@
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include "services/frontend_service.grpc.pb.h"
-#include "environment.hpp"
 #include <iostream>
+#include "environment.hpp"
 
 using namespace std;
 
@@ -17,6 +17,15 @@ void run_worker()
     const std::string master_address =
         get_env_var(ENV_MASTER_SERVICE)
         .value_or("master-service-0.master-service");
+    const std::string worker_hostname = [&]()
+    {
+        if (auto hostname = get_env_var(ENV_HOSTNAME_SELF); hostname)
+            return hostname;
+        const auto msg = std::string("Worker hostname not set - env ") + ENV_HOSTNAME_SELF + " doesn't exist."
+        throw std::runtime_error(msg);
+    };
+    std::cout << "Worker hostname: " << worker_hostname << std::endl;
+
 
     auto master_channel = grpc::CreateChannel(master_address,
                                               grpc::InsecureChannelCredentials());
