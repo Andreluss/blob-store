@@ -5,9 +5,7 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
-
-
-// ----------------------------------- Common classes -----------------------------------
+#include <sstream>
 
 class Logger {
     struct Color {
@@ -33,21 +31,36 @@ class Logger {
         return nowSs.str();
     }
 
-    static void _print(const std::string color, const std::string type, const std::string& message) {
-        std::cerr << getCurrentTime() << " " << color << "[" << type << "]" << Color::Reset << " " << message << std::endl;
+    template<typename... Args>
+    static std::string concatenateArgs(Args&&... args) {
+        std::ostringstream oss;
+        (oss << ... << args); // Fold expression (C++17)
+        return oss.str();
+    }
+
+    static void _print(const std::string& color, const std::string& type, const std::string& message) {
+        std::cerr << getCurrentTime() << " " << color << "[" << type << "]"
+                  << Color::Reset << " " << message << std::endl;
     }
 
 public:
-    static void debug(std::string message) {
-        _print(Color::Cyan, "Debug", message);
+    template<typename... Args>
+    static void debug(Args&&... args) {
+        _print(Color::Cyan, "Debug", concatenateArgs(std::forward<Args>(args)...));
     }
-    static void info(std::string message) {
-        _print(Color::Green, "Info", message);
+
+    template<typename... Args>
+    static void info(Args&&... args) {
+        _print(Color::Green, "Info", concatenateArgs(std::forward<Args>(args)...));
     }
-    static void error(std::string message) {
-        _print(Color::Red, "Error", message);
+
+    template<typename... Args>
+    static void error(Args&&... args) {
+        _print(Color::Red, "Error", concatenateArgs(std::forward<Args>(args)...));
     }
-    static void warn(std::string message) {
-        _print(Color::Yellow, "Warn", message);
+
+    template<typename... Args>
+    static void warn(Args&&... args) {
+        _print(Color::Yellow, "Warn", concatenateArgs(std::forward<Args>(args)...));
     }
 };
