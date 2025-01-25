@@ -55,7 +55,6 @@ TEST_F(WorkerServiceTest, GetFreeStorage) {
     grpc::Status status = stub_->GetFreeStorage(&context, request, &response);
 
     EXPECT_TRUE(status.ok());
-    std::cout << "Free storage: " << response.storage() << std::endl;
     EXPECT_GT(response.storage(), 0);
 }
 
@@ -83,6 +82,10 @@ TEST_F(WorkerServiceTest, SaveBlob) {
 
     auto saved_blob = std::accumulate(blob_file.begin(), blob_file.end(), std::string());
     EXPECT_EQ(saved_blob, blob);
+
+    // We want to check, if the worker failed while connecting to master.
+    auto failed_on_connection = status.error_message().find("Connection refused") != std::string::npos;
+    EXPECT_TRUE(failed_on_connection);
 }
 
 TEST_F(WorkerServiceTest, GetBlob) {
