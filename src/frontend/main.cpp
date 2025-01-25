@@ -5,6 +5,7 @@
 #include <grpc++/grpc++.h>
 #include "network_utils.hpp"
 #include "environment.hpp"
+#include "logging.hpp"
 
 void run_frontend(const FrontendConfig& config)
 {
@@ -24,6 +25,7 @@ void run_frontend(const FrontendConfig& config)
         .BuildAndStart();
 
     Logger::info("Frontend service is running on ", server_address);
+    Logger::info("Master service is running on ", master_address);
     server->Wait();
 }
 

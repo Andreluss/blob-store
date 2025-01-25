@@ -26,7 +26,6 @@ message BlobInfo {
 }
 
 message UploadBlobResponse {
-  string upload_result = 1; // TODO remove
 }
 
 message GetBlobRequest {
