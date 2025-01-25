@@ -38,7 +38,7 @@ spec:
           command: ["./build/bin/worker"]
           env:
             - name: MASTER_SERVICE
-              value: "master-0.master-service:5042"
+              value: "master-0.master-service:50042"
 #            - name: MY_DNS_NAME
           resources:
             limits:

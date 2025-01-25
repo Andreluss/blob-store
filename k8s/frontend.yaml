@@ -36,7 +36,7 @@ spec:
           command: ["./build/bin/frontend"]
           env:
             - name: MASTER_SERVICE
-              value: "master-0.master-service:5042"
+              value: "master-0.master-service:50042"
           resources:
             limits:
               ephemeral-storage: 1Gi
