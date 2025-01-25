@@ -40,6 +40,8 @@ spec:
           env:
             - name: CONTAINER_PORT
               value: "50042"
+            - name: "WORKERS_PER_MASTER"
+              value: "1"
     #          volumeMounts:
 #            - name: www
 #              mountPath: CONTAINER_STORAGE_VOLUME_PATH

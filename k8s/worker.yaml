@@ -41,8 +41,6 @@ spec:
               value: "master-0.master-service:50042"
             - name: CONTAINER_PORT
               value: "50042"
-            - name: "WORKERS_PER_MASTER"
-              value: "1"
           resources:
             limits:
               ephemeral-storage: 1Gi
