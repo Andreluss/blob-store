@@ -14,11 +14,11 @@ static std::string operator""_S(const char* str, std::size_t) {
 }
 
 auto send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
-    const common::ipv4Address& worker_address) -> Expected<std::monostate, std::string>
+    const std::string& worker_address) -> Expected<std::monostate, std::string>
 {
     try
     {
-        const auto address_string = address_to_string(worker_address);
+        const auto& address_string = worker_address;
         std::cerr << "Sending blob to worker at " << address_string << std::endl;
 
         const auto worker_channel = grpc::CreateChannel(address_string, grpc::InsecureChannelCredentials());
@@ -102,19 +102,22 @@ auto receive_and_hash_blob(grpc::ServerReader<frontend::UploadBlobRequest>* read
 }
 
 auto get_workers_from_master(std::string blob_hash, const std::unique_ptr<master::MasterService::Stub>& master_stub)
-    -> Expected<google::protobuf::RepeatedPtrField<common::ipv4Address>, grpc::Status>
+    -> Expected<std::vector<std::string>, grpc::Status>
 {
+    //google::protobuf::RepeatedPtrField<common::ipv4Address>
     // Ask master for workers to store blob.
-    grpc::ClientContext client_context;
-    master::GetWorkersToSaveBlobRequest get_workers_request;
-    get_workers_request.set_blobid(blob_hash);
-    master::GetWorkersToSaveBlobResponse get_workers_response;
-    if (const auto status = master_stub->GetWorkersToSaveBlob(&client_context, get_workers_request,
-                                                              &get_workers_response); !status.ok()) {
-        return grpc::Status(grpc::CANCELLED, status.error_message());
-    }
+    // grpc::ClientContext client_context;
+    // master::GetWorkersToSaveBlobRequest get_workers_request;
+    // get_workers_request.set_blobid(blob_hash);
+    // master::GetWorkersToSaveBlobResponse get_workers_response;
+    // if (const auto status = master_stub->GetWorkersToSaveBlob(&client_context, get_workers_request,
+    //                                                           &get_workers_response); !status.ok()) {
+    //     return grpc::Status(grpc::CANCELLED, status.error_message());
+    // }
 
-    return get_workers_response.addresses();
+    // return get_workers_response.addresses();
+
+    return std::vector{std::string("worker-0.worker-service:50042")};
 }
 
 auto get_worker_with_blob_id(const auto& master_stub_, std::string blob_id)
@@ -148,11 +151,12 @@ grpc::Status FrontendServiceImpl::UploadBlob(grpc::ServerContext* context,
     .and_then([&](auto filehash)->Expected<int, grpc::Status> {
 
     auto &[blob_file, blob_hash] = filehash;
+    std::cout << "Received blob with hash " << blob_hash << std::endl;
     return get_workers_from_master(blob_hash, master_stub_)
     .and_then([&](const auto& workers)->Expected<int, grpc::Status>{
 
     for (const auto& worker_address : workers) {
-        std::cout << "Sending blob to worker at " << address_to_string(worker_address) << std::endl;
+        std::cout << "Sending blob to worker at " << worker_address << std::endl;
         auto send_blob_result = send_blob_to_worker(blob_file, blob_hash, worker_address);
         if (not send_blob_result.has_value()) {
             return grpc::Status(grpc::CANCELLED, send_blob_result.error());
