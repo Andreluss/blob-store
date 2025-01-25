@@ -37,6 +37,8 @@ spec:
           env:
             - name: MASTER_SERVICE
               value: "master-0.master-service:50042"
+            - name: CONTAINER_PORT
+              value: "50042"
           resources:
             limits:
               ephemeral-storage: 1Gi

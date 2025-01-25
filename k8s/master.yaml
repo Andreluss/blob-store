@@ -37,6 +37,9 @@ spec:
             - containerPort: 50042 # needs to match the MASTER port
               name: master
           command: ["./build/bin/master_server"]
+          env:
+            - name: CONTAINER_PORT
+              value: "50042"
     #          volumeMounts:
 #            - name: www
 #              mountPath: CONTAINER_STORAGE_VOLUME_PATH
