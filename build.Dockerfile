@@ -30,6 +30,12 @@ RUN vcpkg install gtest:x64-linux
 # Install xxhash
 RUN vcpkg install xxhash:x64-linux
 
+# Install xxhash
+RUN vcpkg install boost-uuid
+
+# Intall google cloud client libraries
+RUN vcpkg install google-cloud-cpp[core,spanner]
+
 # Set up working directory
 ARG workdir
 WORKDIR $workdir
@@ -38,10 +44,10 @@ WORKDIR $workdir
 COPY . .
 
 # Configure and build
-RUN cmake -B build \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake && \
-    cmake --build build --parallel
+#RUN cmake -B build \
+#    -DCMAKE_BUILD_TYPE=Release \
+#    -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake && \
+#    cmake --build build --parallel
 
 # Set the default command
 CMD ["./build/bin/frontend"]

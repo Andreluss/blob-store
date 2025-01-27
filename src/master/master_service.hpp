@@ -10,14 +10,9 @@ public:
     grpc::Status GetWorkersToSaveBlob(
         grpc::ServerContext* context,
         const master::GetWorkersToSaveBlobRequest* request,
-        master::GetWorkersToSaveBlobResponse* response) override {
-        return grpc::Status::OK;
-    }
+        master::GetWorkersToSaveBlobResponse* response) override;
     grpc::Status GetWorkerWithBlob(
         grpc::ServerContext* context,
         const master::GetWorkerWithBlobRequest* request,
-        master::GetWorkerWithBlobResponse* response) override
-    {
-        return grpc::Status::CANCELLED;
-    }
+        master::GetWorkerWithBlobResponse* response) override;
 };
