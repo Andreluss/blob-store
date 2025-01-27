@@ -30,8 +30,8 @@ bool MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) const {
     try {
         auto mutation = spanner::InsertMutationBuilder(
             "blob_copy",
-            {"uuid", "hash", "worker_id", "state"})
-            .EmplaceRow(entry.uuid, entry.hash, entry.worker_id, entry.state)
+            {"uuid", "hash", "worker_id", "state", "size_mb"})
+            .EmplaceRow(entry.uuid, entry.hash, entry.worker_id, entry.state, entry.size_mb)
             .Build();
 
         auto commit_result = client->Commit(
@@ -47,18 +47,40 @@ bool MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) const {
     }
 }
 
+bool MasterDbRepository::updateBlobEntry(const BlobCopyDTO& entry) const {
+    try {
+        auto mutation = spanner::UpdateMutationBuilder(
+            "blob_copy",
+            {"uuid", "hash", "worker_id", "state", "size_mb"})
+            .EmplaceRow(entry.uuid, entry.hash, entry.worker_id, entry.state, entry.size_mb)
+            .Build();
+
+        auto commit_result = client->Commit(
+            spanner::Mutations{mutation});
+
+        if (!commit_result) {
+            throw std::runtime_error(commit_result.status().message());
+        }
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Error adding entry: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+
     // Method to query entries by hash
 std::vector<BlobCopyDTO> MasterDbRepository::queryBlobByHash(const std::string& hash) const {
     std::vector<BlobCopyDTO> results;
     try {
         auto query = spanner::SqlStatement(
-            "SELECT uuid, hash, worker_id, state FROM blob_copy "
+            "SELECT uuid, hash, worker_id, state, size_mb FROM blob_copy "
             "WHERE hash = $1",
             {{"p1", spanner::Value(hash)}});
 
         auto rows = client->ExecuteQuery(query);
 
-        using rowType = std::tuple<std::string, std::string, std::string, std::string>;
+        using rowType = std::tuple<std::string, std::string, std::string, std::string, int64_t>;
         for (auto const& row : spanner::StreamOf<rowType>(rows)) {
             if (!row) {
                 throw std::runtime_error(row.status().message());
@@ -69,7 +91,39 @@ std::vector<BlobCopyDTO> MasterDbRepository::queryBlobByHash(const std::string& 
             hash = std::get<1>(*row);
             worker_id = std::get<2>(*row);
             state = std::get<3>(*row);
-            results.emplace_back(uuid, hash, worker_id, state);
+            int64_t size_mb = std::get<4>(*row);
+            results.emplace_back(uuid, hash, worker_id, state, size_mb);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error querying entries: " << e.what() << std::endl;
+    }
+
+    return results;
+}
+
+std::vector<BlobCopyDTO> MasterDbRepository::queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_id) const {
+    std::vector<BlobCopyDTO> results;
+    try {
+        auto query = spanner::SqlStatement(
+            "SELECT uuid, hash, worker_id, state, size_mb FROM blob_copy "
+            "WHERE hash = $1 AND worker_id = $2",
+            {{"p1", spanner::Value(hash)}, {"p2", spanner::Value(worker_id)}});
+
+        auto rows = client->ExecuteQuery(query);
+
+        using rowType = std::tuple<std::string, std::string, std::string, std::string, int64_t>;
+        for (auto const& row : spanner::StreamOf<rowType>(rows)) {
+            if (!row) {
+                throw std::runtime_error(row.status().message());
+            }
+
+            std::string uuid, hash, worker_id, state;
+            uuid = std::get<0>(*row);
+            hash = std::get<1>(*row);
+            worker_id = std::get<2>(*row);
+            state = std::get<3>(*row);
+            int64_t size_mb = std::get<4>(*row);
+            results.emplace_back(uuid, hash, worker_id, state, size_mb);
         }
     } catch (const std::exception& e) {
         std::cerr << "Error querying entries: " << e.what() << std::endl;

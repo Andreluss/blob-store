@@ -14,8 +14,9 @@ namespace spanner = ::google::cloud::spanner;
 
 struct BlobCopyDTO {
     std::string uuid, hash, worker_id, state;
-    BlobCopyDTO(std::string  uuid, std::string hash, std::string worker_id, std::string state) :
-        uuid(std::move(uuid)), hash(std::move(hash)), worker_id(std::move(worker_id)), state(std::move(state)) {}
+    int64_t size_mb;
+    BlobCopyDTO(std::string  uuid, std::string hash, std::string worker_id, std::string state, int64_t size_mb) :
+        uuid(std::move(uuid)), hash(std::move(hash)), worker_id(std::move(worker_id)), state(std::move(state)), size_mb(size_mb) {}
 };
 
 struct WorkerStateDTO {
@@ -51,7 +52,9 @@ public:
 
     // Database operations
     bool addBlobEntry(const BlobCopyDTO &entry) const;
+    bool updateBlobEntry(const BlobCopyDTO& entry) const;
     std::vector<BlobCopyDTO> queryBlobByHash(const std::string& hash) const;
+    std::vector<BlobCopyDTO> queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_id) const;
     bool deleteBlobEntry(const std::string& uuid) const;
     bool addWorkerState(const WorkerStateDTO& worker_state) const;
     bool updateWorkerState(const WorkerStateDTO& worker_state) const;

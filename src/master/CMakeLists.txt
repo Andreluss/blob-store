@@ -3,8 +3,8 @@ set(COMPONENT_NAME master)
 
 # Add the source files for the frontend component
 add_library(${COMPONENT_NAME} STATIC
-        echo_service.hpp
         master_service.hpp
+        master_service.cpp
 )
 
 

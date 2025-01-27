@@ -24,12 +24,14 @@ int main() {
 
         db.addBlobEntry(BlobCopyDTO("123e4567-e89b-12d3-a456-426614174000",
                    "hash123",
-                   "worker123", ""));
+                   "worker123", "SAVED", 123));
 
         auto results = db.queryBlobByHash("hash123");
-        for (const auto& [uuid, hash, worker_id, state] : results) {
+        for (const auto& [uuid, hash, worker_id, state, size_mb] : results) {
             std::cout << "UUID: " << uuid
                      << ", Hash: " << hash
+                     << ", Size mb: " << size_mb
+                     << ", State: " << state
                      << ", Worker ID: " << worker_id << std::endl;
         }
 
