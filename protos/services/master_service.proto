@@ -10,6 +10,7 @@ service MasterService {
   rpc NotifyBlobSaved (NotifyBlobSavedRequest) returns (NotifyBlobSavedResponse) {}
   rpc GetWorkerWithBlob (GetWorkerWithBlobRequest) returns (GetWorkerWithBlobResponse) {}
   rpc DeleteBlob (DeleteBlobRequest) returns (DeleteBlobResponse) {}
+  rpc RegisterWorker(RegisterWorkerRequest) returns (RegisterWorkerResponse) {}
 }
 
 message HealthcheckRequest {}
@@ -51,3 +52,12 @@ message DeleteBlobRequest {
 }
 
 message DeleteBlobResponse {}
+
+message RegisterWorkerRequest {
+  string address = 1;
+  int64 space_available = 2;
+}
+
+message RegisterWorkerResponse {
+  string worker_id = 1;
+}

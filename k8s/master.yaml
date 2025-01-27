@@ -42,6 +42,13 @@ spec:
               value: "50042"
             - name: "WORKERS_PER_MASTER"
               value: "1"
+            - name: "PROJECT_ID"
+              value: "blob-store-447713"
+            - name: "SPANNER_INSTANCE_ID"
+              value: "blob-store-main"
+            - name: "DB_NAME"
+              value: "app-master"
+
     #          volumeMounts:
 #            - name: www
 #              mountPath: CONTAINER_STORAGE_VOLUME_PATH

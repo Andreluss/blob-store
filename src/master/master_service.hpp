@@ -20,7 +20,8 @@ public:
         const master::GetWorkerWithBlobRequest* request,
         master::GetWorkerWithBlobResponse* response) override;
     grpc::Status NotifyBlobSaved(grpc::ServerContext* context, const master::NotifyBlobSavedRequest* request,
-                                 master::NotifyBlobSavedResponse* response);
+                                 master::NotifyBlobSavedResponse* response) override;
+    grpc::Status RegisterWorker(grpc::ServerContext* context, const master::RegisterWorkerRequest* request, master::RegisterWorkerResponse* response) override;
     MasterServiceImpl(MasterDbRepository* db);
 private:
     MasterDbRepository *db;

@@ -84,7 +84,6 @@ grpc::Status MasterServiceImpl::NotifyBlobSaved(
     const master::NotifyBlobSavedRequest* request,
     master::NotifyBlobSavedResponse* response)
 {
-    const boost::uuids::uuid blobCopyUuid = uuidGenerator();
     auto blobDTOs = db->queryBlobByHashAndWorkerId(request->blob_hash(), request->worker_id());
     if (blobDTOs.size() != 1) {
         return grpc::Status::CANCELLED;
@@ -101,5 +100,16 @@ grpc::Status MasterServiceImpl::NotifyBlobSaved(
     {
         return grpc::Status::CANCELLED;
     }
+    return grpc::Status::OK;
+}
+
+grpc::Status MasterServiceImpl::RegisterWorker(grpc::ServerContext* context, const master::RegisterWorkerRequest* request, master::RegisterWorkerResponse* response)
+{
+    const boost::uuids::uuid worker_id = uuidGenerator();
+    auto worker_state = WorkerStateDTO(to_string(worker_id), request->address(), request->space_available(), 0, 0);
+    if(!db->addWorkerState(worker_state)) {
+        return grpc::Status::CANCELLED;
+    }
+    response->set_worker_id(worker_id);
     return grpc::Status::OK;
 }

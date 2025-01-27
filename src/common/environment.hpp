@@ -25,6 +25,9 @@ constexpr static auto ENV_CONTAINER_PORT = "CONTAINER_PORT";
 constexpr static auto ENV_HOSTNAME_SELF = "HOSTNAME";
 constexpr static auto ENV_MASTER_SERVICE = "MASTER_SERVICE";
 constexpr static auto ENV_WORKERS_PER_MASTER = "WORKERS_PER_MASTER";
+constexpr static auto ENV_PROJECT_ID = "PROJECT_ID";
+constexpr static auto ENV_SPANNER_INSTANCE_ID = "SPANNER_INSTANCE_ID";
+constexpr static auto ENV_DB_NAME = "DB_NAME";
 
 using ServiceAddress = std::string;
 
@@ -46,6 +49,9 @@ struct MasterConfig
     /// i-th master manages workers [i * workers_per_master, ..., (i+1) * workers_per_master - 1]
     int ordinal;
     std::vector<ServiceAddress> workers;
+    std::string project_id;
+    std::string spanner_instance_id;
+    std::string db_name;
 
     static MasterConfig LoadFromEnv() {
         uint16_t container_port = std::stoi(get_env_var_exn(ENV_CONTAINER_PORT));
@@ -64,7 +70,11 @@ struct MasterConfig
             return workers_;
         }();
 
-        return {container_port, ordinal, workers};
+        std::string project_id = get_env_var_exn(ENV_PROJECT_ID);
+        std::string spanner_instance_id = get_env_var_exn(ENV_SPANNER_INSTANCE_ID);
+        std::string db_name = get_env_var_exn(ENV_DB_NAME);
+
+        return {container_port, ordinal, workers, project_id, spanner_instance_id, db_name};
     }
 };
 

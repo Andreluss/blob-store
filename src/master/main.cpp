@@ -6,6 +6,9 @@
 #include <grpcpp/server_builder.h>
 #include <iostream>
 #include <services/master_service.grpc.pb.h>
+
+#include "master_db_repository.hpp"
+#include "master_service.hpp"
 #include "network_utils.hpp"
 using namespace std::string_literals;
 
@@ -42,6 +45,29 @@ void run_mock(const MasterConfig& config)
     server->Wait();
 }
 
+void run_master(const MasterConfig& config)
+{
+    const std::string container_port = std::to_string(config.container_port);
+    const std::string server_address("0.0.0.0:" + container_port);
+    std::cout << "Master service address: " << server_address << std::endl;
+    MasterDbRepository db(
+        config.project_id,
+        config.spanner_instance_id,
+        config.db_name
+    );
+
+    MasterServiceImpl master_service = MasterServiceImpl(&db);
+
+    const auto server =
+        grpc::ServerBuilder()
+            .AddListeningPort(server_address, grpc::InsecureServerCredentials())
+            .RegisterService(&master_service)
+            .BuildAndStart();
+
+    std::cout << "Master service is running with container port " << container_port << std::endl;
+    server->Wait();
+}
+
 int main() {
-    run_mock(MasterConfig::LoadFromEnv());
+    run_master(MasterConfig::LoadFromEnv());
 }
