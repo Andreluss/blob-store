@@ -2,20 +2,26 @@
 // Created by mjacniacki on 04.01.25.
 //
 
-#include <iostream>
 #include "worker_service.hpp"
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
+#include "services/frontend_service.grpc.pb.h"
+#include <iostream>
+#include "environment.hpp"
 
 using namespace std;
 
-int main() {
-    const std::string server_address("0.0.0.0:50051");
-    const std::string master_address = "127.0.0.1:50052";
+void run_worker(const WorkerConfig& config)
+{
+    const std::string container_port = std::to_string(config.container_port);
+    const std::string master_service_address = config.master_service;
+    const std::string worker_service_address = config.my_service_address;
+    std::cout << "This worker service address: " << worker_service_address << std::endl;
+    std::cout << "Master service address: " << master_service_address << std::endl;
 
-    auto master_channel = grpc::CreateChannel(master_address,
+    const std::string server_address("0.0.0.0:" + container_port);
+    const auto master_channel = grpc::CreateChannel(master_service_address,
                                               grpc::InsecureChannelCredentials());
-
     WorkerServiceImpl worker_service(master_channel);
 
     const auto server =
@@ -24,8 +30,10 @@ int main() {
             .RegisterService(&worker_service)
             .BuildAndStart();
 
-    std::cout << "Worker service is running on " << server_address << std::endl;
+    std::cout << "Worker service is running with container port " << container_port << std::endl;
     server->Wait();
+}
 
-    return 0;
+int main() {
+    run_worker(WorkerConfig::LoadFromEnv());
 }

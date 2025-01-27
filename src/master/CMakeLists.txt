@@ -27,6 +27,7 @@ target_link_libraries(master_db_example PUBLIC
 target_include_directories(${COMPONENT_NAME} PUBLIC
         ${CMAKE_SOURCE_DIR}/protos
         ${CMAKE_SOURCE_DIR}/src/master
+        ${CMAKE_SOURCE_DIR}/src/common
 )
 
 # Link dependencies
@@ -41,7 +42,8 @@ target_link_libraries(${COMPONENT_NAME} PUBLIC
         common_lib
 )
 
-add_executable(master_server main.cpp)
+add_executable(master_server main.cpp
+        master_service_mock.hpp)
 target_link_libraries(master_server PRIVATE ${COMPONENT_NAME})
 set_target_properties(master_server PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin

@@ -25,7 +25,7 @@ message GetWorkersToSaveBlobRequest {
 }
 
 message GetWorkersToSaveBlobResponse {
-  repeated string addresses = 1; // repeated = array
+  repeated string addresses = 1; // addresses can be IP:PORT, but also DNS_NAME:PORT
 }
 
 // Message send by worker to notify successful saving of blob

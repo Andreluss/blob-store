@@ -7,6 +7,14 @@
 #include <iomanip>
 #include <sstream>
 
+static auto operator<< (auto& out, auto x) -> decltype(x.end(),out) {
+    out << "{";
+    for (int i = 0; auto e : x)
+        out << (i++ ? ", " : "") << e;
+    out << "}";
+    return out;
+}
+
 class Logger {
     struct Color {
         static constexpr const char* Red = "\033[31m";

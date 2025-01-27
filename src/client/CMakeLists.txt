@@ -1,14 +1,17 @@
-set(COMPONENT_NAME frontend)
+set(COMPONENT_NAME client)
 
+# Add the source files for the frontend component
 add_executable(${COMPONENT_NAME}
         main.cpp
-        frontend_service.cpp
+        client.cpp
 )
 
+# Specify include directories
 target_include_directories(${COMPONENT_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/src/common
 )
 
+# Link dependencies
 target_link_libraries(${COMPONENT_NAME}
         PRIVATE
         proto_lib
@@ -17,7 +20,6 @@ target_link_libraries(${COMPONENT_NAME}
         xxHash::xxhash
 )
 
-# Set output directory
 set_target_properties(${COMPONENT_NAME}
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

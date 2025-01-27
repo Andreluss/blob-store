@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  type: LoadBalancer # !!! by default its ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 50042
+      targetPort: 50042
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: blob-store
+          image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 50042
+          command: ["./build/bin/frontend"]
+          env:
+            - name: MASTER_SERVICE
+              value: "master-0.master-service:50042"
+            - name: CONTAINER_PORT
+              value: "50042"
+          resources:
+            limits:
+              ephemeral-storage: 1Gi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 1Gi
+              memory: 2Gi
