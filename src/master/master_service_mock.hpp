@@ -40,8 +40,7 @@ public:
     grpc::Status GetWorkerWithBlob(grpc::ServerContext* context, const master::GetWorkerWithBlobRequest* request,
         master::GetWorkerWithBlobResponse* response) override
     {
-        auto worker_with_blob = response->add_addresses();
-        *worker_with_blob = config.workers.front();
+        response->set_addresses(config.workers.front());
         return grpc::Status::OK;
     }
     grpc::Status DeleteBlob(grpc::ServerContext* context, const master::DeleteBlobRequest* request,

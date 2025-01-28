@@ -48,7 +48,7 @@ class Logger {
 
     static void _print(const std::string& color, const std::string& type, const std::string& message) {
         std::cerr << getCurrentTime() << " " << color << "[" << type << "]"
-                  << Color::Reset << " " << message << std::endl;
+                  << Color::Reset << " " << message << std::endl << std::flush;
     }
 
 public:

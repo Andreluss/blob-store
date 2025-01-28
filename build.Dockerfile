@@ -44,10 +44,10 @@ WORKDIR $workdir
 COPY . .
 
 # Configure and build
-#RUN cmake -B build \
-#    -DCMAKE_BUILD_TYPE=Release \
-#    -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake && \
-#    cmake --build build --parallel
+RUN cmake -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake && \
+    cmake --build build --parallel
 
 # Set the default command
 CMD ["./build/bin/frontend"]

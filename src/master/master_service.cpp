@@ -110,6 +110,6 @@ grpc::Status MasterServiceImpl::RegisterWorker(grpc::ServerContext* context, con
     if(!db->addWorkerState(worker_state)) {
         return grpc::Status::CANCELLED;
     }
-    response->set_worker_id(worker_id);
+    response->set_worker_id(to_string(worker_id));
     return grpc::Status::OK;
 }

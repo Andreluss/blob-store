@@ -140,13 +140,7 @@ auto get_worker_with_blob_id(const auto& master_stub_, std::string blob_id)
     if (const auto status = master_stub_->GetWorkerWithBlob(&client_context, request, &response); !status.ok()) {
         return status.error_message();
     }
-    std::vector<std::string> addresses(response.addresses().begin(), response.addresses().end());
-    if (addresses.empty()) {
-        return Unexpected("No workers found for blob");
-    }
-    Logger::info("Found worker with blob ", blob_id, " at ", addresses.front());
-    if (addresses.size() > 1) { Logger::warn("Discarded ", ssize(addresses) - 1, " other workers found for blob ", blob_id); }
-    return addresses.front();
+    return response.addresses();
 }
 
 static std::string failed_request(const std::string& error_message, const std::string& performed_action) {
@@ -166,7 +160,7 @@ grpc::Status FrontendServiceImpl::UploadBlob(grpc::ServerContext* context,
     .and_then([&](auto filehash)->Expected<int, grpc::Status> {
 
     auto &[blob_file, blob_hash] = filehash;
-    std::cout << "Received blob with hash " << blob_hash << std::endl;
+    Logger::info("Received blob with hash ", blob_hash);
     return get_workers_from_master(blob_hash, master_stub_)
     .and_then([&](const auto& workers)->Expected<int, grpc::Status>{
 
@@ -197,6 +191,7 @@ static auto f_const(C const_value){
 grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const frontend::GetBlobRequest* request,
                                           grpc::ServerWriter<frontend::GetBlobResponse>* writer)
 {
+    Logger::info("GetBlob request");
     const auto& blob_id = request->blob_hash();
 
     return get_worker_with_blob_id(master_stub_, blob_id)
@@ -225,6 +220,7 @@ grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const fr
 grpc::Status FrontendServiceImpl::DeleteBlob(grpc::ServerContext* context, const frontend::DeleteBlobRequest* request,
     frontend::DeleteBlobResponse* response)
 {
+    Logger::info("DeleteBlob request");
     grpc::ClientContext client_context;
     master::DeleteBlobResponse master_response;
     master::DeleteBlobRequest master_request;
@@ -244,5 +240,7 @@ grpc::Status FrontendServiceImpl::DeleteBlob(grpc::ServerContext* context, const
 grpc::Status FrontendServiceImpl::HealthCheck(grpc::ServerContext* context, const frontend::HealthcheckRequest* request,
     frontend::HealthcheckResponse* response)
 {
+    std::cout<<"Health check request \n" << std::flush;
+    Logger::info("Health check request logger \n");
     return grpc::Status::OK;
 }
