@@ -12,6 +12,7 @@ add_library(${COMPONENT_NAME} STATIC
 add_library(master_db_repo STATIC master_db_repository.hpp master_db_repository.cpp)
 target_include_directories(master_db_repo PUBLIC
         ${CMAKE_SOURCE_DIR}/src/master
+        ${CMAKE_SOURCE_DIR}/src/common
 )
 target_link_libraries(master_db_repo PUBLIC Boost::uuid google-cloud-cpp::spanner)
 

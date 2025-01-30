@@ -41,6 +41,7 @@ Wybrać dla niego toolchain: nasz docker i dodać opcje CMake:
 - klaster z image registry: `europe-central2-docker.pkg.dev`
 - registry image repo: `europe-central2-docker.pkg.dev/blobs69/blob-repository`
 - nazwa dockerimage: `blob-store` (tag: `latest` albo `v1.0.70`)
+- uprawnienia do google-cloud-api's z poziomu poda: https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#kubernetes-sa-to-iam
 ### Na początku
 ```
 gcloud auth configure-docker europe-central2-docker.pkg.dev

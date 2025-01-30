@@ -29,8 +29,8 @@ struct WorkerStateDTO {
     WorkerStateDTO(std::string worker_id,
                   std::string ip_address,
                   int64_t available_space_mb,
-                  int64_t locked_space_mb,
-                  int64_t last_heartbeat_epoch_ts)
+                  uint64_t locked_space_mb,
+                  uint64_t last_heartbeat_epoch_ts)
         : worker_id(std::move(worker_id))
         , ip_address(std::move(ip_address))
         , available_space_mb(available_space_mb)

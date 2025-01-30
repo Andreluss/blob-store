@@ -11,7 +11,7 @@ int main() {
         // Create database connection
         // Replace with your actual project, instance, and database IDs
         MasterDbRepository db(
-            "blob-store-447713",
+            "blobs-project-449409",
             "blob-store-main",
             "app-master"
         );

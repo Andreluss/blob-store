@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <master_db_repository.hpp>
+#include "logging.hpp"
 
 namespace spanner = ::google::cloud::spanner;
 MasterDbRepository::MasterDbRepository (
@@ -18,7 +19,6 @@ MasterDbRepository::MasterDbRepository (
         client = std::make_shared<spanner::Client>(
             spanner::MakeConnection(db));
 
-        std::cout << "Successfully connected to Spanner database" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Connection error: " << e.what() << std::endl;
         throw;
@@ -42,7 +42,7 @@ bool MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) const {
         }
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Error adding entry: " << e.what() << std::endl;
+        Logger::error("Error adding entry: ", e.what());
         return false;
     }
 }
@@ -219,15 +219,19 @@ std::vector<WorkerStateDTO> MasterDbRepository::getWorkersWithFreeSpace(int64_t 
     auto query = spanner::SqlStatement(
         "SELECT worker_id, ip_address, available_space_mb, locked_space_mb, last_heartbeat_epoch_ts "
         "FROM worker_state "
-        "WHERE available_space_mb - locked_space_mb >= $1"
+        "WHERE available_space_mb - locked_space_mb >= $1 "
         "LIMIT $2",
         {{"p1", spanner::Value(spaceNeeded)}, {"p2", spanner::Value(num_workers)}});
+    Logger::info("1");
 
     auto rows = client->ExecuteQuery(query);
     auto stream = spanner::StreamOf<std::tuple<std::string, std::string, int64_t, int64_t, int64_t>>(rows);
     std::vector<WorkerStateDTO> result;
+    Logger::info("2");
     for (auto const& row : stream)
     {
+        Logger::info("3");
+        Logger::error(row.status().message());
         if (!row) throw std::runtime_error(row.status().message());
         result.emplace_back(
             std::get<0>(*row),
@@ -237,10 +241,12 @@ std::vector<WorkerStateDTO> MasterDbRepository::getWorkersWithFreeSpace(int64_t 
             std::get<4>(*row)
         );
     }
+    Logger::info("4");
     if (result.size() < num_workers)
     {
-        throw std::runtime_error("Error: requested " + std::to_string(num_workers) + " workers, but only "
+        Logger::error("Error: requested " + std::to_string(num_workers) + " workers, but only "
                                     + std::to_string(result.size()) + " workers matching the criteria exist");
+        throw std::runtime_error("");
     }
     return result;
 }
