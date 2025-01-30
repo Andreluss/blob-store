@@ -28,10 +28,11 @@ spec:
       labels:
         app: master # APP_LABEL_NAME
     spec:
+      serviceAccountName: ksa-master
       terminationGracePeriodSeconds: 10
       containers:
         - name: blob-store
-          image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest
+          image: europe-central2-docker.pkg.dev/blobs-project-449409/repo/blob-store:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 50042 # needs to match the MASTER port
@@ -43,7 +44,7 @@ spec:
             - name: "WORKERS_PER_MASTER"
               value: "1"
             - name: "PROJECT_ID"
-              value: "blob-store-447713"
+              value: "blobs-project-449409"
             - name: "SPANNER_INSTANCE_ID"
               value: "blob-store-main"
             - name: "DB_NAME"

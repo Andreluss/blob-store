@@ -10,9 +10,6 @@
 #include "master_service.hpp"
 #include "logging.hpp"
 
-#define BLOB_STATUS_DURING_CREATION "DURING_CREATION"
-#define BLOB_STATUS_SAVED "SAVED"
-
 namespace master
 {
     class GetWorkersToSaveBlobRequest;
@@ -70,7 +67,7 @@ grpc::Status MasterServiceImpl::GetWorkerWithBlob(
     master::GetWorkerWithBlobResponse* response) {
     Logger::info("GetWorkerWithBlob");
     try {
-        auto rows = db->queryBlobByHash(request->blob_hash());
+        auto rows = db->querySavedBlobByHash(request->blob_hash());
         if (rows.empty()) {
             // response->set_message("Error: Blob with requested ID doesn't exist");
             Logger::error("Error: Blob with ID ", request->blob_hash(), " doesn't exist");
@@ -78,13 +75,12 @@ grpc::Status MasterServiceImpl::GetWorkerWithBlob(
         }
         // choose one of the copies
         BlobCopyDTO &blobCopy = rows[0];
-        common::ipv4Address address = common::ipv4Address();
+        Logger::info("Blob found on ", rows.size(), " workers, choosing ", blobCopy.worker_address);
         WorkerStateDTO workerState = db->getWorkerState(blobCopy.worker_address);
         response->set_addresses(workerState.worker_address);
         return grpc::Status::OK;
     } catch (std::runtime_error& e) {
         std::cerr << e.what();
-        // response->set_message("Error: Querying database resulted in an error");
         return grpc::Status::CANCELLED;
     }
 }

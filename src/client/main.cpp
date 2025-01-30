@@ -33,7 +33,7 @@ void run_frontend_ping(const std::string frontend_load_balancer_address)
     }
 }
 
-void run_frontend_upload_blob(const std::string frontend_load_balancer_address)
+std::string run_frontend_upload_blob(const std::string frontend_load_balancer_address)
 {
     int c = 1;
     while (c--) {
@@ -78,11 +78,12 @@ void run_frontend_upload_blob(const std::string frontend_load_balancer_address)
 
                     if (auto status = writer->Finish(); status.ok())
                     {
-                        std::cerr << "DONE - status OK" << std::endl;
+                        std::cerr << "DONE - status OK, blob_hash: " << response.blob_hash() << std::endl;
+                        return response.blob_hash();
                     }
                     else
                     {
-                        std::cerr << "DONE - status " << status.error_code() << " " << status.error_message() << std::endl;
+                        std::cerr << "DONE - status ERROR " << status.error_code() << " " << status.error_message() << std::endl;
                     }
                 }
             }
@@ -91,6 +92,53 @@ void run_frontend_upload_blob(const std::string frontend_load_balancer_address)
         {
             std::cout << "Starting blob upload! | FAILED " << std::endl;
         }
+    }
+    return "";
+}
+
+void run_frontend_get_blob(const std::string& frontend_load_balancer_address, const std::string& blob_hash) {
+    auto channel = grpc::CreateChannel(frontend_load_balancer_address, grpc::InsecureChannelCredentials());
+    const auto frontend_stub = frontend::Frontend::NewStub(std::move(channel));
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout << "Retrieving blob with hash: " << blob_hash << "\n";
+
+    grpc::ClientContext client_ctx;
+    frontend::GetBlobRequest request;
+    request.set_blob_hash(blob_hash);
+
+    std::string received_data;
+
+    // Set up the reader for the streaming response
+    auto reader = frontend_stub->GetBlob(&client_ctx, request);
+    frontend::GetBlobResponse response;
+
+    // Read all chunks from the stream
+    std::cout << "Start recieving\n";
+    while (reader->Read(&response)) {
+        std::cout << "next chunk\n";
+        received_data += response.chunk_data();
+    }
+    std::cout << "Finished stream\n";
+
+    // Check the status of the RPC
+    const auto status = reader->Finish();
+    if (!status.ok()) {
+        std::cerr << "Failed to retrieve blob: " << status.error_code()
+                  << " " << status.error_message() << std::endl;
+        return;
+    }
+
+    std::cout << "Retrieved blob data: " << received_data << std::endl;
+
+    // Verify the data matches what we uploaded
+    const std::string expected_data = "ABRAKADABRA";
+    if (received_data == expected_data) {
+        std::cout << "Blob verification successful - data matches!" << std::endl;
+    } else {
+        std::cerr << "Blob verification failed - data mismatch!" << std::endl;
+        std::cerr << "Expected: " << expected_data << std::endl;
+        std::cerr << "Received: " << received_data << std::endl;
     }
 }
 
@@ -105,5 +153,8 @@ int main(const int argc, char** argv) {
     }();
     std::cout << "Client will connect to frontend at " << frontend_address << std::endl;
     run_frontend_ping(frontend_address);
-    run_frontend_upload_blob(frontend_address);
+    std::string blob_hash = run_frontend_upload_blob(frontend_address);
+    if (!blob_hash.empty()) {
+        run_frontend_get_blob(frontend_address, blob_hash);
+    }
 }

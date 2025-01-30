@@ -136,10 +136,12 @@ auto get_worker_with_blob_id(const auto& master_stub_, std::string blob_id)
     request.set_blob_hash(blob_id);
     master::GetWorkerWithBlobResponse response;
     grpc::ClientContext client_context;
+    Logger::info("Requesting worker with blob from master");
     master_stub_->GetWorkerWithBlob(&client_context, request, &response);
     if (const auto status = master_stub_->GetWorkerWithBlob(&client_context, request, &response); !status.ok()) {
         return status.error_message();
     }
+    Logger::info("Got worker address");
     return response.addresses();
 }
 
@@ -173,6 +175,7 @@ grpc::Status FrontendServiceImpl::UploadBlob(grpc::ServerContext* context,
     }
 
     Logger::info("Blob saved to workers successfully.");
+    response->set_blob_hash(blob_hash);
     blob_file.remove();
     return 0; });})
 

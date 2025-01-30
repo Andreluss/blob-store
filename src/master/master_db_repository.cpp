@@ -72,13 +72,13 @@ bool MasterDbRepository::updateBlobEntry(const BlobCopyDTO& entry) const {
 
 
     // Method to query entries by hash
-std::vector<BlobCopyDTO> MasterDbRepository::queryBlobByHash(const std::string& hash) const {
+std::vector<BlobCopyDTO> MasterDbRepository::querySavedBlobByHash(const std::string& hash) const {
     std::vector<BlobCopyDTO> results;
     try {
         auto query = spanner::SqlStatement(
             "SELECT hash, worker_address, state, size_mb FROM blob_copy "
-            "WHERE hash = $1",
-            {{"p1", spanner::Value(hash)}});
+            "WHERE hash = $1 AND state = $2",
+            {{"p1", spanner::Value(hash)}, {"p2", spanner::Value(BLOB_STATUS_SAVED)}});
 
         auto rows = client->ExecuteQuery(query);
 

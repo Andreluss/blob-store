@@ -24,7 +24,7 @@ int main() {
 
         db.addBlobEntry(BlobCopyDTO( "hash123","worker123", "SAVED", 123));
 
-        auto results = db.queryBlobByHash("hash123");
+        auto results = db.querySavedBlobByHash("hash123");
         for (const auto& [address, worker_id, state, size_mb] : results) {
             std::cout << "address" << worker_id
                      << ", Size mb: " << size_mb

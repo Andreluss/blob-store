@@ -10,6 +10,9 @@
 #include <vector>
 #include <memory>
 
+#define BLOB_STATUS_DURING_CREATION "DURING_CREATION"
+#define BLOB_STATUS_SAVED "SAVED"
+
 namespace spanner = ::google::cloud::spanner;
 
 struct BlobCopyDTO {
@@ -50,7 +53,7 @@ public:
     // Database operations
     bool addBlobEntry(const BlobCopyDTO &entry) const;
     bool updateBlobEntry(const BlobCopyDTO& entry) const;
-    std::vector<BlobCopyDTO> queryBlobByHash(const std::string& hash) const;
+    std::vector<BlobCopyDTO> querySavedBlobByHash(const std::string& hash) const;
     std::vector<BlobCopyDTO> queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_address) const;
     bool deleteBlobEntryByHash(const std::string& hash) const;
     bool deleteBlobEntriesByWorkerAddress(const std::string& worker_address) const;

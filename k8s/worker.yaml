@@ -21,7 +21,7 @@ spec:
     matchLabels:
       app: worker # APP_LABEL_NAME # Matches the Service's selector
   serviceName: "worker-service" # "SERVICE_NAME"
-  replicas: 1 # NUMBER_OF_REPLICAS
+  replicas: 3 # NUMBER_OF_REPLICAS
   template:
     metadata:
       labels:
@@ -30,7 +30,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: blob-store
-          image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest
+          image: europe-central2-docker.pkg.dev/blobs-project-449409/repo/blob-store:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 50042 # needs to match the worker port

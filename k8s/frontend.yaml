@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: blob-store
-          image: europe-central2-docker.pkg.dev/blobs69/blob-repository/blob-store:latest
+          image: europe-central2-docker.pkg.dev/blobs-project-449409/repo/blob-store:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 50042
