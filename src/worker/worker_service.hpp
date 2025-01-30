@@ -3,23 +3,28 @@
 
 #include <filesystem>
 #include <fstream>
+#include <utility>
+#include <utility>
 #include "services/worker_service.grpc.pb.h"
 #include "services/master_service.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 #include "blob_hasher.hpp"
+#include "expected.hpp"
 
 // We assume that blobs are stored in the blobs/ directory which is created in the same
 // directory as the executable.
 const std::string BLOBS_PATH = "blobs/";
 
 
+auto get_free_storage() -> Expected<uint64_t, grpc::Status>;
+
 class WorkerServiceImpl final : public worker::WorkerService::Service {
     std::unique_ptr<master::MasterService::Stub> master_stub_;
+    std::string worker_address;
 public:
-    explicit WorkerServiceImpl(const std::shared_ptr<grpc::Channel>& channel)
-            : master_stub_(master::MasterService::NewStub(channel))
+    explicit WorkerServiceImpl(const std::shared_ptr<grpc::Channel>& channel, std::string worker_id)
+            : master_stub_(master::MasterService::NewStub(channel)), worker_address(std::move(worker_id))
     {
-            std::filesystem::create_directories(BLOBS_PATH);
             // print pwd
             std::cout << "Current path is " << std::filesystem::current_path() << '\n';
     }

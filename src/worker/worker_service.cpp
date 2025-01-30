@@ -132,7 +132,7 @@ grpc::Status WorkerServiceImpl::SaveBlob(grpc::ServerContext *context,
     return receive_blob_from_frontend(reader)
             .and_then([&](const std::string &hash) -> Expected<std::monostate, grpc::Status> {
                 master::NotifyBlobSavedRequest notify_request;
-                notify_request.set_worker_id("workerId");
+                notify_request.set_worker_address(worker_address);
                 notify_request.set_blob_hash(hash);
                 Logger::info("Notifying master: ", notify_request.DebugString());
 

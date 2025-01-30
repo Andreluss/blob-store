@@ -31,7 +31,7 @@ message GetWorkersToSaveBlobResponse {
 
 // Message send by worker to notify successful saving of blob
 message NotifyBlobSavedRequest {
-  string worker_id = 1;
+  string worker_address = 1;
   string blob_hash = 2;
 }
 
@@ -58,6 +58,4 @@ message RegisterWorkerRequest {
   int64 space_available = 2;
 }
 
-message RegisterWorkerResponse {
-  string worker_id = 1;
-}
+message RegisterWorkerResponse {}

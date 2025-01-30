@@ -13,26 +13,23 @@
 namespace spanner = ::google::cloud::spanner;
 
 struct BlobCopyDTO {
-    std::string uuid, hash, worker_id, state;
+    std::string hash, worker_address, state;
     int64_t size_mb;
-    BlobCopyDTO(std::string  uuid, std::string hash, std::string worker_id, std::string state, int64_t size_mb) :
-        uuid(std::move(uuid)), hash(std::move(hash)), worker_id(std::move(worker_id)), state(std::move(state)), size_mb(size_mb) {}
+    BlobCopyDTO(std::string hash, std::string worker_address, std::string state, int64_t size_mb) :
+        hash(std::move(hash)), worker_address(std::move(worker_address)), state(std::move(state)), size_mb(size_mb) {}
 };
 
 struct WorkerStateDTO {
-    std::string worker_id;
-    std::string ip_address;
+    std::string worker_address;
     int64_t available_space_mb;
     int64_t locked_space_mb;
     int64_t last_heartbeat_epoch_ts;
 
-    WorkerStateDTO(std::string worker_id,
-                  std::string ip_address,
+    WorkerStateDTO(std::string worker_address,
                   int64_t available_space_mb,
-                  uint64_t locked_space_mb,
-                  uint64_t last_heartbeat_epoch_ts)
-        : worker_id(std::move(worker_id))
-        , ip_address(std::move(ip_address))
+                  int64_t locked_space_mb,
+                  int64_t last_heartbeat_epoch_ts)
+        : worker_address(std::move(worker_address))
         , available_space_mb(available_space_mb)
         , locked_space_mb(locked_space_mb)
         , last_heartbeat_epoch_ts(last_heartbeat_epoch_ts) {}
@@ -54,12 +51,13 @@ public:
     bool addBlobEntry(const BlobCopyDTO &entry) const;
     bool updateBlobEntry(const BlobCopyDTO& entry) const;
     std::vector<BlobCopyDTO> queryBlobByHash(const std::string& hash) const;
-    std::vector<BlobCopyDTO> queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_id) const;
-    bool deleteBlobEntry(const std::string& uuid) const;
+    std::vector<BlobCopyDTO> queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_address) const;
+    bool deleteBlobEntryByHash(const std::string& hash) const;
+    bool deleteBlobEntriesByWorkerAddress(const std::string& worker_address) const;
     bool addWorkerState(const WorkerStateDTO& worker_state) const;
     bool updateWorkerState(const WorkerStateDTO& worker_state) const;
-    bool deleteWorkerState(const std::string& worker_id) const;
-    WorkerStateDTO getWorkerState(const std::string& worker_id) const;
+    bool deleteWorkerState(const std::string& worker_address) const;
+    WorkerStateDTO getWorkerState(const std::string& worker_address) const;
     std::vector<WorkerStateDTO> getWorkersWithFreeSpace(int64_t spaceNeeded, int32_t num_workers) const;
 
 private:
