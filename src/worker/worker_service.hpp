@@ -10,6 +10,7 @@
 #include <grpcpp/grpcpp.h>
 #include "blob_hasher.hpp"
 #include "expected.hpp"
+#include "logging.hpp"
 
 // We assume that blobs are stored in the blobs/ directory which is created in the same
 // directory as the executable.
@@ -25,8 +26,7 @@ public:
     explicit WorkerServiceImpl(const std::shared_ptr<grpc::Channel>& channel, std::string worker_id)
             : master_stub_(master::MasterService::NewStub(channel)), worker_address(std::move(worker_id))
     {
-            // print pwd
-            std::cout << "Current path is " << std::filesystem::current_path() << '\n';
+            Logger::info("Current path is: ", std::filesystem::current_path());
     }
 
     grpc::Status Healthcheck(

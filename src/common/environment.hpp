@@ -30,8 +30,6 @@ constexpr static auto ENV_DB_NAME = "DB_NAME";
 
 using ServiceAddress = std::string;
 
-/// blabla-42 -> 42
-/// test-22 -> 42
 static int get_ordinal_from_hostname (const std::string& hostname) {
     const auto pos = hostname.find('-');
     if (pos == std::string::npos) {

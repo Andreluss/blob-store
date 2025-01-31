@@ -25,7 +25,7 @@ public:
     grpc::Status GetWorkersToSaveBlob(grpc::ServerContext* context, const master::GetWorkersToSaveBlobRequest* request,
         master::GetWorkersToSaveBlobResponse* response) override
     {
-        std::cout << "Getting workers to save blob " << request->blob_hash() << std::endl;
+        Logger::info("Getting workers to save blob ", request->blob_hash());
 
         for (const auto& worker: mock_workers) {
             Logger::debug("Next address: ", worker);

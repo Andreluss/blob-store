@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package worker;
 
-import "common.proto";
-
 service WorkerService {
   rpc Healthcheck (HealthcheckRequest) returns (HealthcheckResponse) {}
   rpc GetFreeStorage (GetFreeStorageRequest) returns (GetFreeStorageResponse) {}

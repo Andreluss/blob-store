@@ -140,13 +140,12 @@ auto get_worker_with_blob_id(std::string blob_id, const std::string& master_addr
 }
 
 static std::string failed_request(const std::string& error_message, const std::string& performed_action) {
-    std::cerr << "Failed to " << performed_action << ": " << error_message << std::endl;
+    Logger::error("Failed to ", performed_action, ": ", error_message);
     return "Failed to " + performed_action + ".";
 }
 
 // ---------------------------------- implementation ----------------------------------------------------
 
-// TODO-soon: select master based on the hash.
 grpc::Status FrontendServiceImpl::UploadBlob(grpc::ServerContext* context,
     grpc::ServerReader<frontend::UploadBlobRequest>* reader, frontend::UploadBlobResponse* response)
 {
@@ -184,7 +183,6 @@ static auto f_const(C const_value){
     return [const_value](auto x) { return const_value; };
 }
 
-// TODO: choose master based on hash
 grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const frontend::GetBlobRequest* request,
                                           grpc::ServerWriter<frontend::GetBlobResponse>* writer)
 {
@@ -247,7 +245,6 @@ grpc::Status FrontendServiceImpl::DeleteBlob(grpc::ServerContext* context, const
 grpc::Status FrontendServiceImpl::HealthCheck(grpc::ServerContext* context, const frontend::HealthcheckRequest* request,
     frontend::HealthcheckResponse* response)
 {
-    std::cout<<"Health check request \n" << std::flush;
     Logger::info("Health check request logger \n");
     return grpc::Status::OK;
 }

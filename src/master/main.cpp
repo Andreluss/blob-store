@@ -21,7 +21,7 @@ void run_echo()
     builder.RegisterService(&service);
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Master server listening on " << server_address << std::endl;
+    Logger::info("Echo server listening on ", server_address);
     server->Wait();
 }
 
@@ -37,7 +37,7 @@ void run_mock(const MasterConfig& config)
         .RegisterService(&service)
         .BuildAndStart();
 
-    std::cout << "Master Mock (" << config.ordinal << ") listening on port " << container_port << std::endl;
+    Logger::info("Master Mock (", config.ordinal, ") listening on port ", container_port);
     server->Wait();
 }
 
@@ -45,7 +45,7 @@ void run_master(const MasterConfig& config)
 {
     const std::string container_port = std::to_string(config.container_port);
     const std::string server_address("0.0.0.0:" + container_port);
-    std::cout << "Master service address: " << server_address << std::endl;
+    Logger::info("Master service address: ", server_address);
     MasterDbRepository db(
         config.project_id,
         config.spanner_instance_id,
@@ -60,7 +60,7 @@ void run_master(const MasterConfig& config)
             .RegisterService(&master_service)
             .BuildAndStart();
 
-    std::cout << "Master service is running with container port " << container_port << std::endl;
+    Logger::info("Master service is running with container port ", container_port);
     server->Wait();
 }
 

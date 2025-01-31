@@ -48,11 +48,3 @@ spec:
               cpu: 500m
               ephemeral-storage: 1Gi
               memory: 2Gi
-#  volumeClaimTemplates:
-#    - metadata:
-#        name: www
-#      spec:
-#        accessModes: [ "ReadWriteOnce" ]
-#        resources:
-#          requests:
-#            storage: 1Gi
