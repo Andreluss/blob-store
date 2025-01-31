@@ -1,7 +1,6 @@
 #include <environment.hpp>
 
 #include "master_service_mock.hpp"
-#include "echo_service.hpp"
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <iostream>
