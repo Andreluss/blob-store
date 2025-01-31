@@ -70,7 +70,7 @@ public:
     auto updateBlobEntry(const BlobCopyDTO& entry) -> Expected<std::monostate, grpc::Status>;
     auto querySavedBlobByHash(const std::string& hash) -> Expected<std::vector<BlobCopyDTO>, grpc::Status>;
     auto queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_address) -> Expected<std::vector<BlobCopyDTO>, grpc:: Status>;
-    auto deleteBlobEntryByHash(const std::string& hash) -> Expected<bool, grpc::Status>;
+    auto deleteBlobEntryByHash(const std::string& hash) -> Expected<std::monostate, grpc::Status>;
     auto deleteBlobEntriesByWorkerAddress(const std::string& worker_address) -> Expected<std::monostate, grpc::Status>;
     auto addWorkerState(const WorkerStateDTO& worker_state) -> Expected<std::monostate, grpc::Status>;
     auto updateWorkerState(const WorkerStateDTO& worker_state) -> Expected<std::monostate, grpc::Status>;

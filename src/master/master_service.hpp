@@ -22,7 +22,8 @@ public:
     grpc::Status NotifyBlobSaved(grpc::ServerContext* context, const master::NotifyBlobSavedRequest* request,
                                  master::NotifyBlobSavedResponse* response) override;
     grpc::Status RegisterWorker(grpc::ServerContext* context, const master::RegisterWorkerRequest* request, master::RegisterWorkerResponse* response) override;
-    MasterServiceImpl(MasterDbRepository* db);
+    explicit MasterServiceImpl(MasterDbRepository* db);
+    grpc::Status DeleteBlob(grpc::ServerContext* context, const master::DeleteBlobRequest* request, master::DeleteBlobResponse* response) override;
 private:
     MasterDbRepository *db;
 };

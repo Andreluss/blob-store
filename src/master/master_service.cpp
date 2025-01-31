@@ -8,6 +8,9 @@
 
 #include "master_db_repository.hpp"
 #include "master_service.hpp"
+
+#include <services/worker_service.grpc.pb.h>
+
 #include "logging.hpp"
 
 namespace master
@@ -122,4 +125,38 @@ grpc::Status MasterServiceImpl::RegisterWorker(grpc::ServerContext* context, con
         return db->addWorkerState(worker_state);
     }).output<grpc::Status>([&](auto _){ return grpc::Status::OK; },
         [](auto err) { Logger::error(err.error_message()); return err; });
+}
+
+Expected<std::monostate, grpc::Status> requestWorkerToDeleteBlob(std::string blob_hash, std::string worker_address)
+{
+    const auto worker_channel = grpc::CreateChannel(worker_address, grpc::InsecureChannelCredentials());
+    const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
+
+    worker::DeleteBlobRequest request;
+    worker::DeleteBlobResponse response;
+    grpc::ClientContext client_context;
+
+    request.set_blob_hash(blob_hash);
+
+    auto status = worker_stub->DeleteBlob(&client_context, request, &response);
+    if (not status.ok())
+    {
+        Logger::warn("Unsuccessful attempt to delete blob ", blob_hash, " in worker ", worker_address);
+    }
+}
+
+grpc::Status MasterServiceImpl::DeleteBlob(grpc::ServerContext* context, const master::DeleteBlobRequest* request, master::DeleteBlobResponse* response)
+{
+    Logger::info("DeleteBlob");
+    return db->querySavedBlobByHash(request->blob_hash())
+    .and_then([&](auto blob_copies) -> Expected<std::monostate, grpc::Status> {
+        for (const auto& blob_copy : blob_copies)
+        {
+            // We ignore errors from workers, if one of them doesn't delete blob we should still return a success
+            requestWorkerToDeleteBlob(blob_copy.hash, blob_copy.worker_address);
+        }
+        return db->deleteBlobEntryByHash(request->blob_hash());
+    }).output<grpc::Status>([&](auto _){ return grpc::Status::OK; },
+        [](auto err) { Logger::error(err.error_message()); return err; });
+
 }

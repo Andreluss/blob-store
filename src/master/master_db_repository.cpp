@@ -123,7 +123,8 @@ auto MasterDbRepository::queryBlobByHashAndWorkerId(const std::string& hash, con
     return results;
 }
 
-auto MasterDbRepository::deleteBlobEntryByHash(const std::string& hash) -> Expected<bool, grpc::Status> {
+auto MasterDbRepository::deleteBlobEntryByHash(const std::string& hash) -> Expected<std::monostate, grpc::Status>
+{
     Logger::debug("MasterDbRepository::deleteBlobEntryByHash ", hash);
     auto mutation = MakeDeleteMutation(
         "blob_copy",
@@ -140,7 +141,7 @@ auto MasterDbRepository::deleteBlobEntryByHash(const std::string& hash) -> Expec
     if (!commit_result) {
         return to_grpc_status(commit_result.status());
     }
-    return true;
+    return std::monostate();
 }
 
 auto MasterDbRepository::deleteBlobEntriesByWorkerAddress(const std::string& worker_address) -> Expected<std::monostate,
