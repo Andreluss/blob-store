@@ -69,3 +69,7 @@ kubectl get pods # powinno działać
    kubectl apply -f frontend.yaml
    kubectl apply -f worker.yaml
    ```
+
+## Sukces
+![image](https://github.com/user-attachments/assets/35993753-22b2-4959-927f-2cd596f95162)
+
