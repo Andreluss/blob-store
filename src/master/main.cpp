@@ -1,28 +1,12 @@
 #include <environment.hpp>
-
 #include "master_service_mock.hpp"
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
-#include <iostream>
 #include <services/master_service.grpc.pb.h>
-
 #include "master_db_repository.hpp"
 #include "master_service.hpp"
+
 using namespace std::string_literals;
-
-void run_echo()
-{
-    const std::string server_address("0.0.0.0:50042");
-    EchoServiceImpl service;
-
-    grpc::ServerBuilder builder;
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
-
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    Logger::info("Echo server listening on ", server_address);
-    server->Wait();
-}
 
 void run_mock(const MasterConfig& config)
 {
@@ -51,7 +35,7 @@ void run_master(const MasterConfig& config)
         config.db_name
     );
 
-    MasterServiceImpl master_service = MasterServiceImpl(&db);
+    auto master_service = MasterServiceImpl(&db);
 
     const auto server =
         grpc::ServerBuilder()

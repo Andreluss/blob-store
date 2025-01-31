@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 #include <grpc++/grpc++.h>
-#include "network_utils.hpp"
 #include "environment.hpp"
 #include "logging.hpp"
 

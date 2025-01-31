@@ -1,15 +1,12 @@
 #pragma once
 #include <string>
-#include <iostream>
 #include <logging.hpp>
 #include <grpcpp/create_channel.h>
 #include <services/master_service.grpc.pb.h>
 #include <services/worker_service.grpc.pb.h>
-#include "network_utils.hpp"
 
 using namespace std::string_literals;
 
-// master mock impl
 class MasterServiceMockImpl: public master::MasterService::Service
 {
     MasterConfig config;
