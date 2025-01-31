@@ -40,13 +40,13 @@ grpc::Status MasterServiceImpl::GetWorkersToSaveBlob(
         Logger::info("Generating blob copy uuid");
         const auto dto = BlobCopyDTO(request->blob_hash(), worker.worker_address, BLOB_STATUS_DURING_CREATION, blob_size_mb);
         Logger::info("Saving BlobCopyDTO");
-        if (!db->addBlobEntry(dto)) {
-            // Potencjalnie zostawiamy bloby ze statusem DURING_CREATION. Trzeba je usunąć, ale to nie jest dobre miejsce na to
-            // Jako że wszystko może się wysypać w dowolnej chwili to najlepiej mieć osobny serwis który co jakiś czas sprawdza
-            // czy są bloby during creation, które mają ten stan już długo. Jeśli tak, to pytają workera czy ma
-            // taki blob i zmieniają odpowiednio status, lub usuwają.
-            Logger::error("Error while adding blob entry dto to spanner");
-            return grpc::Status::CANCELLED;
+        auto status = db->addBlobEntry(dto)
+        .output<grpc::Status>(
+            [&](auto _) {return grpc::Status::OK;},
+            std::identity());
+        if (not status.ok()) {
+            Logger::error(status.error_message());
+            return status;
         }
         const auto worker_state_dto = WorkerStateDTO(worker.worker_address,worker.available_space_mb,
                                                      blob_size_mb + worker.locked_space_mb, worker.last_heartbeat_epoch_ts);

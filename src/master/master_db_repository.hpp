@@ -10,6 +10,8 @@
 #include <vector>
 #include <memory>
 
+#include "expected.hpp"
+
 #define BLOB_STATUS_DURING_CREATION "DURING_CREATION"
 #define BLOB_STATUS_SAVED "SAVED"
 
@@ -52,6 +54,7 @@ public:
 
     // Database operations
     bool addBlobEntry(const BlobCopyDTO &entry) const;
+    auto addBlobEntry(const BlobCopyDTO& entry) -> Expected<std::monostate, grpc::Status>;
     bool updateBlobEntry(const BlobCopyDTO& entry) const;
     std::vector<BlobCopyDTO> querySavedBlobByHash(const std::string& hash) const;
     std::vector<BlobCopyDTO> queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_address) const;

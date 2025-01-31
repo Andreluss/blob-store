@@ -22,7 +22,12 @@ int main() {
         db.deleteWorkerState("xd2");
         std::cout << res.worker_address <<'\n';
 
-        db.addBlobEntry(BlobCopyDTO( "hash123","worker123", "SAVED", 123));
+        auto status = db.addBlobEntry(BlobCopyDTO( "hash123","worker123", "SAVED", 123))
+        .output<grpc::Status>(
+            [](auto _) { return grpc::Status::OK; },
+            std::identity()
+            );
+        std::cout << status.error_message();
 
         auto results = db.querySavedBlobByHash("hash123");
         for (const auto& [address, worker_id, state, size_mb] : results) {

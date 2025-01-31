@@ -8,6 +8,7 @@
 #include <master_db_repository.hpp>
 #include <sys/stat.h>
 
+#include "expected.hpp"
 #include "logging.hpp"
 
 namespace spanner = ::google::cloud::spanner;
@@ -27,8 +28,7 @@ MasterDbRepository::MasterDbRepository (
     }
 }
 
-// Method to add new entry
-bool MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) const {
+auto MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) -> Expected<std::monostate, grpc::Status> {
     try {
         auto mutation = spanner::InsertMutationBuilder(
             "blob_copy",
@@ -40,12 +40,11 @@ bool MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) const {
             spanner::Mutations{mutation});
 
         if (!commit_result) {
-            throw std::runtime_error(commit_result.status().message());
+            return grpc::Status(grpc::CANCELLED, commit_result.status().message());
         }
-        return true;
+        return std::monostate();
     } catch (const std::exception& e) {
-        Logger::error("Error adding entry: ", e.what());
-        return false;
+        return grpc::Status(grpc::CANCELLED, e.what());
     }
 }
 
