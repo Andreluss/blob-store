@@ -143,7 +143,7 @@ Expected<std::monostate, grpc::Status> requestWorkerToDeleteBlob(std::string blo
     {
         Logger::warn("Unsuccessful attempt to delete blob ", blob_hash, " in worker ", worker_address);
     }
-    return std::monostate();
+    return std::monostate{};
 }
 
 grpc::Status MasterServiceImpl::DeleteBlob(grpc::ServerContext* context, const master::DeleteBlobRequest* request, master::DeleteBlobResponse* response)
@@ -151,11 +151,14 @@ grpc::Status MasterServiceImpl::DeleteBlob(grpc::ServerContext* context, const m
     Logger::info("DeleteBlob");
     return db->querySavedBlobByHash(request->blob_hash())
     .and_then([&](auto blob_copies) -> Expected<std::monostate, grpc::Status> {
+          Logger::debug("Blob copies ", blob_copies.size());
         for (const auto& blob_copy : blob_copies)
         {
+          Logger::debug("Blob copy ", blob_copy.to_string());
             // We ignore errors from workers, if one of them doesn't delete blob we should still return a success
             requestWorkerToDeleteBlob(blob_copy.hash, blob_copy.worker_address);
         }
+        Logger::debug("Deleting blob entries");
         return db->deleteBlobEntryByHash(request->blob_hash());
     }).output<grpc::Status>([&](auto _){ return grpc::Status::OK; },
         [](auto err) { Logger::error(err.error_message()); return err; });
