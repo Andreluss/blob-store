@@ -40,6 +40,12 @@ auto send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
                 return "Failed to save blob to worker - broken stream";
             }
         }
+        writer->WritesDone();
+        auto status = writer->Finish();
+        if (not status.ok())
+        {
+            return status.error_message();
+        }
 
         return std::monostate{};
     }
@@ -47,20 +53,6 @@ auto send_blob_to_worker(const BlobFile& blob, const std::string& blob_hash,
     {
         return "Error while sending blob to worker: "_S + fse.what();
     }
-}
-
-auto start_get_blob_from_worker(std::string blob_id, const std::string& worker_address)
-    -> std::unique_ptr< ::grpc::ClientReader< ::worker::GetBlobResponse>>
-{
-    const auto worker_channel = grpc::CreateChannel(worker_address, grpc::InsecureChannelCredentials());
-    const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
-
-    worker::GetBlobRequest worker_request;
-    worker_request.set_blob_hash(blob_id);
-    grpc::ClientContext client_context;
-
-    auto reader = worker_stub->GetBlob(&client_context, worker_request);
-    return reader;
 }
 
 auto receive_and_hash_blob(grpc::ServerReader<frontend::UploadBlobRequest>* reader)
@@ -137,12 +129,11 @@ auto get_worker_with_blob_id(const auto& master_stub_, std::string blob_id)
     master::GetWorkerWithBlobResponse response;
     grpc::ClientContext client_context;
     Logger::info("Requesting worker with blob from master");
-    master_stub_->GetWorkerWithBlob(&client_context, request, &response);
     if (const auto status = master_stub_->GetWorkerWithBlob(&client_context, request, &response); !status.ok()) {
         return status.error_message();
     }
     Logger::info("Got worker address");
-    return response.addresses();
+    return NetworkAddress(response.addresses());
 }
 
 static std::string failed_request(const std::string& error_message, const std::string& performed_action) {
@@ -199,8 +190,14 @@ grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const fr
 
     return get_worker_with_blob_id(master_stub_, blob_id)
     .and_then([&](const NetworkAddress& worker_address)->Expected<std::monostate, std::string> {
+        const auto worker_channel = grpc::CreateChannel(worker_address, grpc::InsecureChannelCredentials());
+        const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
 
-        const auto reader = start_get_blob_from_worker(blob_id, worker_address);
+        worker::GetBlobRequest worker_request;
+        worker_request.set_blob_hash(blob_id);
+        grpc::ClientContext client_context;
+
+        const auto reader = worker_stub->GetBlob(&client_context, worker_request);
 
         frontend::GetBlobResponse response;
         worker::GetBlobResponse worker_response;
