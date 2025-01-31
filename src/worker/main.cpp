@@ -19,8 +19,9 @@ void run_worker(const WorkerConfig& config)
     const std::string container_port = std::to_string(config.container_port);
     const std::string master_service_address = config.master_service;
     const std::string worker_service_address = config.my_service_address;
-    std::cout << "This worker service address: " << worker_service_address << std::endl;
-    std::cout << "Master service address: " << master_service_address << std::endl;
+    Logger::info("My service address: ", worker_service_address);
+    Logger::info("There are ", config.masters_count, " master services");
+    Logger::info("My master service address: ", master_service_address);
 
     const std::string server_address("0.0.0.0:" + container_port);
     const auto master_channel = grpc::CreateChannel(master_service_address,

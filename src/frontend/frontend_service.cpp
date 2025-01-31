@@ -1,11 +1,10 @@
 #include "frontend_service.hpp"
-#include "network_utils.hpp"
+#include <environment.hpp>
 #include "expected.hpp"
 #include "blob_hasher.hpp"
 #include "blob_file.hpp"
 #include <fstream>
 #include <logging.hpp>
-#include <ranges>
 #include <services/worker_service.grpc.pb.h>
 
 // ------------------------------------ helpers ---------------------------------------------------------
@@ -102,9 +101,11 @@ auto receive_and_hash_blob(grpc::ServerReader<frontend::UploadBlobRequest>* read
     }
 }
 
-auto get_workers_from_master(std::string blob_hash, const std::unique_ptr<master::MasterService::Stub>& master_stub)
+auto get_workers_from_master(std::string blob_hash, const std::string& master_address)
     -> Expected<std::vector<std::string>, grpc::Status>
 {
+    Logger::info("Requesting workers from master at ", master_address);
+    const auto master_stub = master::MasterService::NewStub(grpc::CreateChannel(master_address, grpc::InsecureChannelCredentials()));
     //google::protobuf::RepeatedPtrField<common::ipv4Address>
     // Ask master for workers to store blob.
     grpc::ClientContext client_context;
@@ -121,14 +122,16 @@ auto get_workers_from_master(std::string blob_hash, const std::unique_ptr<master
     return addresses;
 }
 
-auto get_worker_with_blob_id(const auto& master_stub_, std::string blob_id)
+auto get_worker_with_blob_id(std::string blob_id, const std::string& master_address)
     -> Expected<NetworkAddress, std::string>
 {
+    Logger::info("Getting worker with blob id ", blob_id, " from master at ", master_address);
     master::GetWorkerWithBlobRequest request;
     request.set_blob_hash(blob_id);
     master::GetWorkerWithBlobResponse response;
     grpc::ClientContext client_context;
-    Logger::info("Requesting worker with blob from master");
+
+    const auto master_stub_ = master::MasterService::NewStub(grpc::CreateChannel(master_address, grpc::InsecureChannelCredentials()));
     if (const auto status = master_stub_->GetWorkerWithBlob(&client_context, request, &response); !status.ok()) {
         return status.error_message();
     }
@@ -154,7 +157,7 @@ grpc::Status FrontendServiceImpl::UploadBlob(grpc::ServerContext* context,
 
     auto &[blob_file, blob_hash] = filehash;
     Logger::info("Received blob with hash ", blob_hash);
-    return get_workers_from_master(blob_hash, master_stub_)
+    return get_workers_from_master(blob_hash, get_master_service_address_based_on_hash(blob_hash))
     .and_then([&](const auto& workers)->Expected<int, grpc::Status>{
 
     for (const auto& worker_address : workers) {
@@ -188,7 +191,7 @@ grpc::Status FrontendServiceImpl::GetBlob(grpc::ServerContext* context, const fr
     Logger::info("GetBlob request");
     const auto& blob_id = request->blob_hash();
 
-    return get_worker_with_blob_id(master_stub_, blob_id)
+    return get_worker_with_blob_id(blob_id, get_master_service_address_based_on_hash(blob_id))
     .and_then([&](const NetworkAddress& worker_address)->Expected<std::monostate, std::string> {
         const auto worker_channel = grpc::CreateChannel(worker_address, grpc::InsecureChannelCredentials());
         const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
@@ -221,11 +224,15 @@ grpc::Status FrontendServiceImpl::DeleteBlob(grpc::ServerContext* context, const
     frontend::DeleteBlobResponse* response)
 {
     Logger::info("DeleteBlob request");
+    auto blob_hash = request->blob_hash();
+    auto master_address = get_master_service_address_based_on_hash(blob_hash);
+    const auto master_stub_ = master::MasterService::NewStub(grpc::CreateChannel(master_address, grpc::InsecureChannelCredentials()));
     grpc::ClientContext client_context;
     master::DeleteBlobResponse master_response;
     master::DeleteBlobRequest master_request;
-    master_request.set_blob_hash(request->blob_hash());
+    master_request.set_blob_hash(blob_hash);
 
+    Logger::info("Request to delete blob ", blob_hash, " from master at ", master_address);
     if (const auto master_status = master_stub_->DeleteBlob(&client_context, master_request, &master_response);
         not master_status.ok()) {
         response->set_delete_result(failed_request(master_status.error_message(),
