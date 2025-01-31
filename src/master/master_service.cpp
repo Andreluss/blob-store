@@ -143,6 +143,7 @@ Expected<std::monostate, grpc::Status> requestWorkerToDeleteBlob(std::string blo
     {
         Logger::warn("Unsuccessful attempt to delete blob ", blob_hash, " in worker ", worker_address);
     }
+    return std::monostate();
 }
 
 grpc::Status MasterServiceImpl::DeleteBlob(grpc::ServerContext* context, const master::DeleteBlobRequest* request, master::DeleteBlobResponse* response)

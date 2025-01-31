@@ -126,17 +126,15 @@ auto MasterDbRepository::queryBlobByHashAndWorkerId(const std::string& hash, con
 auto MasterDbRepository::deleteBlobEntryByHash(const std::string& hash) -> Expected<std::monostate, grpc::Status>
 {
     Logger::debug("MasterDbRepository::deleteBlobEntryByHash ", hash);
-    auto mutation = MakeDeleteMutation(
-        "blob_copy",
-        spanner::KeySet().AddKey(
-            spanner::MakeKey(hash)
-        ).AddRange(
-            spanner::MakeKeyBoundClosed(hash),
-            spanner::MakeKeyBoundClosed(hash)
-        )
-    );
+    std::string sql = "DELETE FROM blob_copy WHERE hash = $1";
+    auto statement = spanner::SqlStatement(sql, {{"p1", spanner::Value(hash)}});
 
-    auto commit_result = client->Commit(spanner::Mutations{mutation});
+    auto commit_result = client->Commit([statement, this](spanner::Transaction txn)
+        -> google::cloud::StatusOr<spanner::Mutations> {
+            auto dele = client->ExecuteDml(std::move(txn), statement);
+            if (!dele) return std::move(dele).status();
+            return spanner::Mutations{};
+    });
 
     if (!commit_result) {
         return to_grpc_status(commit_result.status());
