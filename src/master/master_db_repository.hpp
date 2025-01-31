@@ -53,18 +53,17 @@ public:
     MasterDbRepository& operator=(const MasterDbRepository&) = delete;
 
     // Database operations
-    bool addBlobEntry(const BlobCopyDTO &entry) const;
     auto addBlobEntry(const BlobCopyDTO& entry) -> Expected<std::monostate, grpc::Status>;
-    bool updateBlobEntry(const BlobCopyDTO& entry) const;
-    std::vector<BlobCopyDTO> querySavedBlobByHash(const std::string& hash) const;
-    std::vector<BlobCopyDTO> queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_address) const;
-    bool deleteBlobEntryByHash(const std::string& hash) const;
-    bool deleteBlobEntriesByWorkerAddress(const std::string& worker_address) const;
-    bool addWorkerState(const WorkerStateDTO& worker_state) const;
-    bool updateWorkerState(const WorkerStateDTO& worker_state) const;
-    bool deleteWorkerState(const std::string& worker_address) const;
-    WorkerStateDTO getWorkerState(const std::string& worker_address) const;
-    std::vector<WorkerStateDTO> getWorkersWithFreeSpace(int64_t spaceNeeded, int32_t num_workers) const;
+    auto updateBlobEntry(const BlobCopyDTO& entry) -> Expected<std::monostate, grpc::Status>;
+    auto querySavedBlobByHash(const std::string& hash) -> Expected<std::vector<BlobCopyDTO>, grpc::Status>;
+    auto queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_address) -> Expected<std::vector<BlobCopyDTO>, grpc:: Status>;
+    auto deleteBlobEntryByHash(const std::string& hash) -> Expected<bool, grpc::Status>;
+    auto deleteBlobEntriesByWorkerAddress(const std::string& worker_address) -> Expected<bool, grpc::Status>;
+    auto addWorkerState(const WorkerStateDTO& worker_state) -> Expected<bool, grpc::Status>;
+    auto updateWorkerState(const WorkerStateDTO& worker_state) -> Expected<bool, grpc::Status>;
+    auto deleteWorkerState(const std::string& worker_address) -> Expected<bool, grpc::Status>;
+    auto getWorkerState(const std::string& worker_address) -> Expected<WorkerStateDTO, grpc::Status>;
+    auto getWorkersWithFreeSpace(int64_t spaceNeeded, int32_t num_workers) -> Expected<std::vector<WorkerStateDTO>, grpc::Status>;
 
 private:
     std::shared_ptr<spanner::Client> client;
