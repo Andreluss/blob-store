@@ -22,6 +22,13 @@ struct BlobCopyDTO {
     int64_t size_mb;
     BlobCopyDTO(std::string hash, std::string worker_address, std::string state, int64_t size_mb) :
         hash(std::move(hash)), worker_address(std::move(worker_address)), state(std::move(state)), size_mb(size_mb) {}
+    [[nodiscard]] std::string to_string() const
+    {
+        return "hash: " + hash + ", "
+             + "worker_address: " + worker_address + ", "
+             + "state: " + state + ", "
+             + "size_mb: " + std::to_string(size_mb);
+    }
 };
 
 struct WorkerStateDTO {
@@ -38,6 +45,12 @@ struct WorkerStateDTO {
         , available_space_mb(available_space_mb)
         , locked_space_mb(locked_space_mb)
         , last_heartbeat_epoch_ts(last_heartbeat_epoch_ts) {}
+    [[nodiscard]] std::string to_string() const
+    {
+        return "worker_address: " + worker_address + ", "
+             + "available_space_mb: " + std::to_string(available_space_mb) + ", "
+             + "locked_space_mb: " + std::to_string(locked_space_mb);
+    }
 };
 
 class MasterDbRepository {

@@ -36,26 +36,24 @@ MasterDbRepository::MasterDbRepository (
 }
 
 auto MasterDbRepository::addBlobEntry(const BlobCopyDTO& entry) -> Expected<std::monostate, grpc::Status> {
-    try {
-        auto mutation = spanner::InsertMutationBuilder(
-            "blob_copy",
-            { "hash", "worker_address", "state", "size_mb"})
-            .EmplaceRow(entry.hash, entry.worker_address, entry.state, entry.size_mb)
-            .Build();
+    Logger::debug("MasterDbRepository::addBlobEntry ", entry.to_string());
+    auto mutation = spanner::InsertMutationBuilder(
+        "blob_copy",
+        { "hash", "worker_address", "state", "size_mb"})
+        .EmplaceRow(entry.hash, entry.worker_address, entry.state, entry.size_mb)
+        .Build();
 
-        auto commit_result = client->Commit(
-            spanner::Mutations{mutation});
+    auto commit_result = client->Commit(
+        spanner::Mutations{mutation});
 
-        if (!commit_result) {
-            return to_grpc_status(commit_result.status());
-        }
-        return std::monostate();
-    } catch (const std::exception& e) {
-        return grpc::Status(grpc::CANCELLED, e.what());
+    if (!commit_result) {
+        return to_grpc_status(commit_result.status());
     }
+    return std::monostate();
 }
 
 auto MasterDbRepository::updateBlobEntry(const BlobCopyDTO& entry) -> Expected<std::monostate, grpc::Status> {
+    Logger::debug("MasterDbRepository::updateBlobEntry ", entry.to_string());
     auto mutation = spanner::UpdateMutationBuilder(
         "blob_copy",
         {"hash", "worker_address", "state", "size_mb"})
@@ -72,6 +70,7 @@ auto MasterDbRepository::updateBlobEntry(const BlobCopyDTO& entry) -> Expected<s
 
     // Method to query entries by hash
 auto MasterDbRepository::querySavedBlobByHash(const std::string& hash) -> Expected<std::vector<BlobCopyDTO>, grpc::Status>{
+    Logger::debug("MasterDbRepository::querySavedBlobByHash ", hash);
     std::vector<BlobCopyDTO> results;
         auto query = spanner::SqlStatement(
             "SELECT hash, worker_address, state, size_mb FROM blob_copy "
@@ -98,6 +97,7 @@ auto MasterDbRepository::querySavedBlobByHash(const std::string& hash) -> Expect
 }
 
 auto MasterDbRepository::queryBlobByHashAndWorkerId(const std::string& hash, const std::string& worker_address) -> Expected<std::vector<BlobCopyDTO>, grpc::Status> {
+    Logger::debug("MasterDbRepository::queryBlobByHashAndWorkerId ", hash, " ", worker_address);
     std::vector<BlobCopyDTO> results;
     auto query = spanner::SqlStatement(
         "SELECT hash, worker_address, state, size_mb FROM blob_copy "
@@ -124,6 +124,7 @@ auto MasterDbRepository::queryBlobByHashAndWorkerId(const std::string& hash, con
 }
 
 auto MasterDbRepository::deleteBlobEntryByHash(const std::string& hash) -> Expected<bool, grpc::Status> {
+    Logger::debug("MasterDbRepository::deleteBlobEntryByHash ", hash);
     auto mutation = MakeDeleteMutation(
         "blob_copy",
         spanner::KeySet().AddKey(
@@ -145,6 +146,7 @@ auto MasterDbRepository::deleteBlobEntryByHash(const std::string& hash) -> Expec
 auto MasterDbRepository::deleteBlobEntriesByWorkerAddress(const std::string& worker_address) -> Expected<std::monostate,
     grpc::Status>
 {
+    Logger::debug("MasterDbRepository::deleteBlobEntriesByWorkerAddress ", worker_address);
     std::string sql = "DELETE FROM blob_copy WHERE worker_address = $1";
     auto statement = spanner::SqlStatement(sql, {{"p1", spanner::Value(worker_address)}});
 
@@ -165,6 +167,7 @@ auto MasterDbRepository::deleteBlobEntriesByWorkerAddress(const std::string& wor
 
 auto MasterDbRepository::addWorkerState(const WorkerStateDTO& worker_state) -> Expected<std::monostate, grpc::Status>
 {
+    Logger::debug("MasterDbRepository::addWorkerState ", worker_state.to_string());
     auto mutation = spanner::InsertMutationBuilder( "worker_state", {"worker_address",
         "available_space_mb", "locked_space_mb", "last_heartbeat_epoch_ts"})
         .EmplaceRow(worker_state.worker_address, worker_state.available_space_mb,
@@ -180,6 +183,7 @@ auto MasterDbRepository::addWorkerState(const WorkerStateDTO& worker_state) -> E
 
 auto MasterDbRepository::updateWorkerState(const WorkerStateDTO& worker_state) -> Expected<std::monostate, grpc::Status>
 {
+    Logger::debug("MasterDbRepository::updateWorkerState ", worker_state.to_string());
     auto mutation = spanner::UpdateMutationBuilder(
         "worker_state",
         {"worker_address", "available_space_mb", "locked_space_mb", "last_heartbeat_epoch_ts"})
@@ -196,6 +200,7 @@ auto MasterDbRepository::updateWorkerState(const WorkerStateDTO& worker_state) -
 
 auto MasterDbRepository::deleteWorkerState(const std::string& worker_address) -> Expected<std::monostate, grpc::Status>
 {
+    Logger::debug("MasterDbRepository::deleteWorkerState ", worker_address);
     auto mutation = spanner::DeleteMutationBuilder("worker_state", spanner::KeySet().AddKey(
         spanner::MakeKey(worker_address))).Build();
 
@@ -208,6 +213,7 @@ auto MasterDbRepository::deleteWorkerState(const std::string& worker_address) ->
 }
 
 auto MasterDbRepository::getWorkerState(const std::string& worker_address) -> Expected<WorkerStateDTO, grpc::Status> {
+    Logger::debug("MasterDbRepository::getWorkerState ", worker_address);
     auto query = spanner::SqlStatement(
         "SELECT worker_address, available_space_mb, locked_space_mb, last_heartbeat_epoch_ts "
         "FROM worker_state "
@@ -233,6 +239,7 @@ auto MasterDbRepository::getWorkerState(const std::string& worker_address) -> Ex
 }
 
 auto MasterDbRepository::getWorkersWithFreeSpace(int64_t spaceNeeded, int32_t num_workers) -> Expected<std::vector<WorkerStateDTO>, grpc::Status> {
+    Logger::debug("MasterDbRepository::getWorkersWithFreeSpace ", spaceNeeded, " ", num_workers);
     auto query = spanner::SqlStatement(
         "SELECT worker_address, available_space_mb, locked_space_mb, last_heartbeat_epoch_ts "
         "FROM worker_state "
