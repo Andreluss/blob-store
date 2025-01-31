@@ -48,9 +48,6 @@ spec:
               cpu: 500m
               ephemeral-storage: 1Gi
               memory: 2Gi
-          volumeMounts:
-            - name: storage
-              mountPath: /blobs
 #  volumeClaimTemplates:
 #    - metadata:
 #        name: www
