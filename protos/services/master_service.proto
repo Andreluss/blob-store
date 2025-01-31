@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package master;
 
-import "common.proto";
-
 service MasterService {
   rpc Healthcheck (HealthcheckRequest) returns (HealthcheckResponse) {}
   rpc GetWorkersToSaveBlob (GetWorkersToSaveBlobRequest) returns (GetWorkersToSaveBlobResponse) {}

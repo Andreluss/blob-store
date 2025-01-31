@@ -47,15 +47,6 @@ spec:
               value: "blob-store-main"
             - name: "DB_NAME"
               value: "app-master"
-
-    #          volumeMounts:
+#          volumeMounts:
 #            - name: www
 #              mountPath: CONTAINER_STORAGE_VOLUME_PATH
-#  volumeClaimTemplates:
-#    - metadata:
-#        name: www
-#      spec:
-#        accessModes: [ "ReadWriteOnce" ]
-#        resources:
-#          requests:
-#            storage: 1Gi

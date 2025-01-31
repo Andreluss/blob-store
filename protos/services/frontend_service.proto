@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package frontend;
 
-import "common.proto";
-
 service Frontend {
   rpc UploadBlob (stream UploadBlobRequest) returns (UploadBlobResponse) {}
   rpc GetBlob (GetBlobRequest) returns (stream GetBlobResponse) {}

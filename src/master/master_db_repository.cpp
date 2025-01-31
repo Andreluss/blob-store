@@ -30,7 +30,7 @@ MasterDbRepository::MasterDbRepository (
             spanner::MakeConnection(db));
 
     } catch (const std::exception& e) {
-        std::cerr << "Connection error: " << e.what() << std::endl;
+        Logger::error("Connection error: ", e.what());
         throw;
     }
 }

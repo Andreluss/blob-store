@@ -7,7 +7,6 @@
 
 namespace fs = std::filesystem;
 
-// TODO-someday Andrzej: remove exceptions and convert to Expected
 class BlobFile
 {
     constexpr static auto BLOBS_PATH = "blobs";

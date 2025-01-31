@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package common;
-
-message ipv4Address {
-  uint32 address = 1;  // 4 bytes representing x.x.x.x ip address
-  uint32 port = 2;
-}

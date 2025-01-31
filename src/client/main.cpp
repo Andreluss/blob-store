@@ -51,7 +51,7 @@ std::string run_frontend_upload_blob(const std::string frontend_load_balancer_ad
         auto writer = frontend_stub->UploadBlob(&client_ctx, &response);
         if (writer)
         {
-            std::string raw_blob {"ABRAKADABRA"};
+            std::string raw_blob {"Skibidi ohio zahar"};
             Logger::info("Starting blob upload! | OK ");
 
             auto* blob_info = new frontend::BlobInfo;
@@ -130,7 +130,7 @@ void run_frontend_get_blob(const std::string& frontend_load_balancer_address, co
     Logger::info("Retrieved blob data: ", received_data);
 
     // Verify the data matches what we uploaded
-    const std::string expected_data = "ABRAKADABRA";
+    const std::string expected_data = "Skibidi ohio zahar";
     if (received_data == expected_data) {
         Logger::info("Blob verification successful - data matches!");
     } else {

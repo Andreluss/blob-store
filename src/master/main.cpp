@@ -1,29 +1,12 @@
 #include <environment.hpp>
-
 #include "master_service_mock.hpp"
-#include "echo_service.hpp"
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
-#include <iostream>
 #include <services/master_service.grpc.pb.h>
-
 #include "master_db_repository.hpp"
 #include "master_service.hpp"
+
 using namespace std::string_literals;
-
-void run_echo()
-{
-    const std::string server_address("0.0.0.0:50042");
-    EchoServiceImpl service;
-
-    grpc::ServerBuilder builder;
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
-
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Master server listening on " << server_address << std::endl;
-    server->Wait();
-}
 
 void run_mock(const MasterConfig& config)
 {
@@ -37,7 +20,7 @@ void run_mock(const MasterConfig& config)
         .RegisterService(&service)
         .BuildAndStart();
 
-    std::cout << "Master Mock (" << config.ordinal << ") listening on port " << container_port << std::endl;
+    Logger::info("Master Mock (", config.ordinal, ") listening on port ", container_port);
     server->Wait();
 }
 
@@ -45,14 +28,14 @@ void run_master(const MasterConfig& config)
 {
     const std::string container_port = std::to_string(config.container_port);
     const std::string server_address("0.0.0.0:" + container_port);
-    std::cout << "Master service address: " << server_address << std::endl;
+    Logger::info("Master service address: ", server_address);
     MasterDbRepository db(
         config.project_id,
         config.spanner_instance_id,
         config.db_name
     );
 
-    MasterServiceImpl master_service = MasterServiceImpl(&db);
+    auto master_service = MasterServiceImpl(&db);
 
     const auto server =
         grpc::ServerBuilder()
@@ -60,7 +43,7 @@ void run_master(const MasterConfig& config)
             .RegisterService(&master_service)
             .BuildAndStart();
 
-    std::cout << "Master service is running with container port " << container_port << std::endl;
+    Logger::info("Master service is running with container port ", container_port);
     server->Wait();
 }
 

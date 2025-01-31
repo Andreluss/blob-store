@@ -71,7 +71,7 @@ void run_worker(const WorkerConfig& config)
             .RegisterService(&worker_service)
             .BuildAndStart();
 
-    std::cout << "Worker service is running with container port " << container_port << std::endl;
+    Logger::info("Worker service is running with container port ", container_port);
     server->Wait();
 }
 
