@@ -13,7 +13,7 @@ protected:
         auto master_channel = grpc::CreateChannel(master_address,
                                                   grpc::InsecureChannelCredentials());
 
-        service_ = std::make_unique<WorkerServiceImpl>(master_channel);
+        service_ = std::make_unique<WorkerServiceImpl>(master_channel, "workerId");
         grpc::ServerBuilder builder;
         builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
         builder.RegisterService(service_.get());

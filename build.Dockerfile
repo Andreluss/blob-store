@@ -30,6 +30,12 @@ RUN vcpkg install gtest:x64-linux
 # Install xxhash
 RUN vcpkg install xxhash:x64-linux
 
+# Install xxhash
+RUN vcpkg install boost-uuid
+
+# Intall google cloud client libraries
+RUN vcpkg install google-cloud-cpp[core,spanner]
+
 # Set up working directory
 ARG workdir
 WORKDIR $workdir

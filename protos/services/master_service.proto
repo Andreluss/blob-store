@@ -10,6 +10,7 @@ service MasterService {
   rpc NotifyBlobSaved (NotifyBlobSavedRequest) returns (NotifyBlobSavedResponse) {}
   rpc GetWorkerWithBlob (GetWorkerWithBlobRequest) returns (GetWorkerWithBlobResponse) {}
   rpc DeleteBlob (DeleteBlobRequest) returns (DeleteBlobResponse) {}
+  rpc RegisterWorker(RegisterWorkerRequest) returns (RegisterWorkerResponse) {}
 }
 
 message HealthcheckRequest {}
@@ -21,15 +22,16 @@ message HealthcheckResponse {
 // Message send by front end to get workers IPs and ports
 message GetWorkersToSaveBlobRequest {
   string blob_hash = 1;
+  uint64 size_mb = 2;
 }
 
 message GetWorkersToSaveBlobResponse {
-  repeated common.ipv4Address addresses = 1; // repeated = array
+  repeated string addresses = 1; // addresses can be IP:PORT, but also DNS_NAME:PORT
 }
 
 // Message send by worker to notify successful saving of blob
 message NotifyBlobSavedRequest {
-  string worker_id = 1;
+  string worker_address = 1;
   string blob_hash = 2;
 }
 
@@ -41,7 +43,7 @@ message GetWorkerWithBlobRequest {
 }
 
 message GetWorkerWithBlobResponse {
-  common.ipv4Address addresses = 1;
+  string addresses = 1;
 }
 
 // Message send by frontend to request deletion of a blob
@@ -50,3 +52,10 @@ message DeleteBlobRequest {
 }
 
 message DeleteBlobResponse {}
+
+message RegisterWorkerRequest {
+  string address = 1;
+  int64 space_available = 2;
+}
+
+message RegisterWorkerResponse {}

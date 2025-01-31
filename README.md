@@ -34,3 +34,38 @@ Wybrać dla niego toolchain: nasz docker i dodać opcje CMake:
 2. Wejść w src/master/main.cpp
 3. Zbuildować go za pomocą IDE (lub uruchomić)
 4. Po tych krokach IDE nie powinno podświetlać niczego na czerwono w kodzie, a program powinien się uruchamiać.
+
+## Kubernetes
+### Nasz config:
+- klaster z blob-store: `blobs-cluster` region: `europe-central2`
+- klaster z image registry: `europe-central2-docker.pkg.dev`
+- registry image repo: `europe-central2-docker.pkg.dev/blobs69/blob-repository`
+- nazwa dockerimage: `blob-store` (tag: `latest` albo `v1.0.70`)
+- uprawnienia do google-cloud-api's z poziomu poda: https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#kubernetes-sa-to-iam
+### Na początku
+```
+gcloud auth configure-docker europe-central2-docker.pkg.dev
+gcloud container clusters get-credentials blobs-cluster --region europe-central2
+
+kubectl get pods # powinno działać
+``` 
+
+### Po wprowadzeniu zmian
+1. Po wprowadzeniu zmian build i push do registry (Local - CLion):
+   ```
+   ./dev.sh push-docker
+   ```
+2. Reloadowanie wszystkiego (GCloud):
+   ```
+   kubectl delete all --all
+   ```
+3. Stawianie mastera (GCloud):
+   ```
+   cd /path/to/k8s/configs # można pobrać z repo 
+   kubectl apply -f master.yaml
+   ```
+4. Poczekać chwilę i odpalić resztę:
+   ```
+   kubectl apply -f frontend.yaml
+   kubectl apply -f worker.yaml
+   ```

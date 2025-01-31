@@ -3,13 +3,15 @@
 #include <memory>
 #include <string>
 #include <grpc++/grpc++.h>
-#include "utils.hpp"
+#include "network_utils.hpp"
+#include "environment.hpp"
 #include "logging.hpp"
 
-int main(int argc, char** argv) {
-    Logger::info(address_to_string(0x7f000001, 42), " = 127.0.0.1:42");
-    const std::string server_address("0.0.0.0:50042");
-    const std::string master_address = "127.0.0.1:50052"; // TODO: get this from env variable
+void run_frontend(const FrontendConfig& config)
+{
+    const std::string container_port = std::to_string(config.container_port);
+    const std::string server_address = "0.0.0.0:" + container_port;
+    const std::string master_address = config.master_service;
 
     const auto master_channel =
         grpc::CreateChannel(master_address,grpc::InsecureChannelCredentials());
@@ -23,7 +25,13 @@ int main(int argc, char** argv) {
         .BuildAndStart();
 
     Logger::info("Frontend service is running on ", server_address);
+    Logger::info("Master service is running on ", master_address);
     server->Wait();
+}
+
+int main() {
+    const auto config = FrontendConfig::LoadFromEnv();
+    run_frontend(config);
 
     return 0;
 }

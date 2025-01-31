@@ -7,6 +7,14 @@
 #include <iomanip>
 #include <sstream>
 
+static auto operator<< (auto& out, auto x) -> decltype(x.end(),out) {
+    out << "{";
+    for (int i = 0; auto e : x)
+        out << (i++ ? ", " : "") << e;
+    out << "}";
+    return out;
+}
+
 class Logger {
     struct Color {
         static constexpr const char* Red = "\033[31m";
@@ -40,7 +48,7 @@ class Logger {
 
     static void _print(const std::string& color, const std::string& type, const std::string& message) {
         std::cerr << getCurrentTime() << " " << color << "[" << type << "]"
-                  << Color::Reset << " " << message << std::endl;
+                  << Color::Reset << " " << message << std::endl << std::flush;
     }
 
 public:

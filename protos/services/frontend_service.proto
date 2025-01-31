@@ -26,7 +26,7 @@ message BlobInfo {
 }
 
 message UploadBlobResponse {
-  string upload_result = 1;
+  string blob_hash = 1;
 }
 
 message GetBlobRequest {
