@@ -13,6 +13,7 @@ using namespace std::string_literals;
 class MasterServiceMockImpl: public master::MasterService::Service
 {
     MasterConfig config;
+    const std::vector<std::string> mock_workers = {"worker-0.worker-service:50042"};
 public:
     explicit MasterServiceMockImpl(const MasterConfig& config): config(config) {}
     ~MasterServiceMockImpl() override = default;
@@ -25,7 +26,8 @@ public:
         master::GetWorkersToSaveBlobResponse* response) override
     {
         std::cout << "Getting workers to save blob " << request->blob_hash() << std::endl;
-        for (const auto& worker: config.workers) {
+
+        for (const auto& worker: mock_workers) {
             Logger::debug("Next address: ", worker);
             const auto next_address = response->add_addresses();
             *next_address = worker;
@@ -40,7 +42,7 @@ public:
     grpc::Status GetWorkerWithBlob(grpc::ServerContext* context, const master::GetWorkerWithBlobRequest* request,
         master::GetWorkerWithBlobResponse* response) override
     {
-        response->set_addresses(config.workers.front());
+        response->set_addresses(mock_workers.front());
         return grpc::Status::OK;
     }
     grpc::Status DeleteBlob(grpc::ServerContext* context, const master::DeleteBlobRequest* request,
@@ -48,7 +50,7 @@ public:
     {
         Logger::info("Delete blob ", request->blob_hash(), " request received");
 
-        auto worker_address = config.workers.front();
+        auto worker_address = mock_workers.front();
         const auto worker_stub = worker::WorkerService::NewStub(grpc::CreateChannel(worker_address, grpc::InsecureChannelCredentials()));
 
         worker::DeleteBlobRequest worker_request;

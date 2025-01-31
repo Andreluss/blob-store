@@ -39,9 +39,6 @@ void run_mock(const MasterConfig& config)
         .BuildAndStart();
 
     std::cout << "Master Mock (" << config.ordinal << ") listening on port " << container_port << std::endl;
-    std::cout << "My workers: " << std::endl;
-    std::ranges::copy(config.workers, std::ostream_iterator<std::string>(std::cout, "\n"));
-    std::cout << "---" << std::endl;
     server->Wait();
 }
 

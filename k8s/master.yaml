@@ -22,7 +22,7 @@ spec:
     matchLabels:
       app: master # APP_LABEL_NAME # Matches the Service's selector
   serviceName: "master-service" # "SERVICE_NAME"
-  replicas: 1 # NUMBER_OF_REPLICAS
+  replicas: 3
   template:
     metadata:
       labels:
@@ -41,8 +41,6 @@ spec:
           env:
             - name: CONTAINER_PORT
               value: "50042"
-            - name: "WORKERS_PER_MASTER"
-              value: "1"
             - name: "PROJECT_ID"
               value: "blobs-project-449409"
             - name: "SPANNER_INSTANCE_ID"
