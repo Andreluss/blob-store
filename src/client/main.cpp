@@ -142,6 +142,29 @@ void run_frontend_get_blob(const std::string& frontend_load_balancer_address, co
     }
 }
 
+void run_frontend_delete_blob(const std::string& frontend_load_balancer_address, const std::string& blob_hash) {
+    auto channel = grpc::CreateChannel(frontend_load_balancer_address, grpc::InsecureChannelCredentials());
+    const auto frontend_stub = frontend::Frontend::NewStub(std::move(channel));
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout << "Deleting blob with hash: " << blob_hash << "\n";
+
+    grpc::ClientContext client_ctx;
+    frontend::DeleteBlobRequest request;
+    request.set_blob_hash(blob_hash);
+
+    frontend::DeleteBlobResponse response;
+
+    // Make the RPC call
+    const auto status = frontend_stub->DeleteBlob(&client_ctx, request, &response);
+    if (status.ok()) {
+        std::cout << "Blob deletion successful!" << std::endl;
+    } else {
+        std::cerr << "Failed to delete blob: " << status.error_code()
+                  << " " << status.error_message() << std::endl;
+    }
+}
+
 int main(const int argc, char** argv) {
     // read the frontend (load-balances) address from the command line
     const std::string frontend_address = [&] {
@@ -156,5 +179,6 @@ int main(const int argc, char** argv) {
     std::string blob_hash = run_frontend_upload_blob(frontend_address);
     if (!blob_hash.empty()) {
         run_frontend_get_blob(frontend_address, blob_hash);
+        run_frontend_delete_blob(frontend_address, blob_hash);
     }
 }
