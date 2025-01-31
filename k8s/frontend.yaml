@@ -35,8 +35,8 @@ spec:
             - containerPort: 50042
           command: ["./build/bin/frontend"]
           env:
-            - name: MASTER_SERVICE
-              value: "master-0.master-service:50042"
+            - name: MASTERS_COUNT
+              value: "3"
             - name: CONTAINER_PORT
               value: "50042"
           resources:
