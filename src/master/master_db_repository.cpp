@@ -142,7 +142,9 @@ auto MasterDbRepository::deleteBlobEntryByHash(const std::string& hash) -> Expec
     return true;
 }
 
-auto MasterDbRepository::deleteBlobEntriesByWorkerAddress(const std::string& worker_address) -> Expected<bool, grpc::Status> {
+auto MasterDbRepository::deleteBlobEntriesByWorkerAddress(const std::string& worker_address) -> Expected<std::monostate,
+    grpc::Status>
+{
     std::string sql = "DELETE FROM blob_copy WHERE worker_address = $1";
     auto statement = spanner::SqlStatement(sql, {{"p1", spanner::Value(worker_address)}});
 
@@ -157,11 +159,12 @@ auto MasterDbRepository::deleteBlobEntriesByWorkerAddress(const std::string& wor
         Logger::error(commit_result.status());
         return to_grpc_status(commit_result.status());
     }
-    return true;
+    return std::monostate();
 }
 
 
-auto MasterDbRepository::addWorkerState(const WorkerStateDTO& worker_state) -> Expected<bool, grpc::Status> {
+auto MasterDbRepository::addWorkerState(const WorkerStateDTO& worker_state) -> Expected<std::monostate, grpc::Status>
+{
     auto mutation = spanner::InsertMutationBuilder( "worker_state", {"worker_address",
         "available_space_mb", "locked_space_mb", "last_heartbeat_epoch_ts"})
         .EmplaceRow(worker_state.worker_address, worker_state.available_space_mb,
@@ -172,10 +175,11 @@ auto MasterDbRepository::addWorkerState(const WorkerStateDTO& worker_state) -> E
     if (!commit_result) {
         return to_grpc_status(commit_result.status());
     }
-    return true;
+    return std::monostate();
 }
 
-auto MasterDbRepository::updateWorkerState(const WorkerStateDTO& worker_state) -> Expected<bool, grpc::Status> {
+auto MasterDbRepository::updateWorkerState(const WorkerStateDTO& worker_state) -> Expected<std::monostate, grpc::Status>
+{
     auto mutation = spanner::UpdateMutationBuilder(
         "worker_state",
         {"worker_address", "available_space_mb", "locked_space_mb", "last_heartbeat_epoch_ts"})
@@ -187,10 +191,11 @@ auto MasterDbRepository::updateWorkerState(const WorkerStateDTO& worker_state) -
     if (!commit_result) {
         return to_grpc_status(commit_result.status());
     }
-    return true;
+    return std::monostate();
 }
 
-auto MasterDbRepository::deleteWorkerState(const std::string& worker_address) -> Expected<bool, grpc::Status> {
+auto MasterDbRepository::deleteWorkerState(const std::string& worker_address) -> Expected<std::monostate, grpc::Status>
+{
     auto mutation = spanner::DeleteMutationBuilder("worker_state", spanner::KeySet().AddKey(
         spanner::MakeKey(worker_address))).Build();
 
@@ -199,7 +204,7 @@ auto MasterDbRepository::deleteWorkerState(const std::string& worker_address) ->
     if (!commit_result) {
         return to_grpc_status(commit_result.status());
     }
-    return true;
+    return std::monostate();
 }
 
 auto MasterDbRepository::getWorkerState(const std::string& worker_address) -> Expected<WorkerStateDTO, grpc::Status> {
