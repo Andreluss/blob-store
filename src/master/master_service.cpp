@@ -8,6 +8,9 @@
 
 #include "master_db_repository.hpp"
 #include "master_service.hpp"
+
+#include <services/worker_service.grpc.pb.h>
+
 #include "logging.hpp"
 
 namespace master
@@ -21,68 +24,63 @@ MasterServiceImpl::MasterServiceImpl(MasterDbRepository *db) {
 grpc::Status MasterServiceImpl::GetWorkersToSaveBlob(
     grpc::ServerContext* context,
     const master::GetWorkersToSaveBlobRequest* request,
-    master::GetWorkersToSaveBlobResponse* response) {
+    master::GetWorkersToSaveBlobResponse* response)
+{
     Logger::info("GetWorkersToSaveBlob");
-    int64_t blob_size_mb = request->size_mb();
+    auto blob_size_mb = static_cast<int64_t>(request->size_mb());
     Logger::info("Blob size ", blob_size_mb);
 
-    // Find workers
-    auto workers = db->getWorkersWithFreeSpace(request->size_mb(), 3);
-    Logger::info("Found workers with enough free space ", workers[0].worker_address, workers[1].worker_address, workers[2].worker_address);
-    for (const auto& worker : workers)
-    {
-        // Add to response
-        Logger::info("address of one of the workers: ", worker.worker_address);
-        std::string* workerAddress = response->add_addresses();
-        *workerAddress = worker.worker_address;
+    return db->getWorkersWithFreeSpace(blob_size_mb, 3)
+    .and_then([&](auto workers) -> Expected<std::monostate, grpc::Status> {
+        Logger::info("Found workers with enough free space ", workers[0].worker_address, " ", workers[1].worker_address, " ", workers[2].worker_address);
+        for (const auto& worker : workers)
+        {
+            // Add to response
+            std::string* workerAddress = response->add_addresses();
+            *workerAddress = worker.worker_address;
 
-        // Add blob copy to database with state "during creation"
-        Logger::info("Generating blob copy uuid");
-        const auto dto = BlobCopyDTO(request->blob_hash(), worker.worker_address, BLOB_STATUS_DURING_CREATION, blob_size_mb);
-        Logger::info("Saving BlobCopyDTO");
-        if (!db->addBlobEntry(dto)) {
-            // Potencjalnie zostawiamy bloby ze statusem DURING_CREATION. Trzeba je usunąć, ale to nie jest dobre miejsce na to
-            // Jako że wszystko może się wysypać w dowolnej chwili to najlepiej mieć osobny serwis który co jakiś czas sprawdza
-            // czy są bloby during creation, które mają ten stan już długo. Jeśli tak, to pytają workera czy ma
-            // taki blob i zmieniają odpowiednio status, lub usuwają.
-            Logger::error("Error while adding blob entry dto to spanner");
-            return grpc::Status::CANCELLED;
-        }
-        const auto worker_state_dto = WorkerStateDTO(worker.worker_address,worker.available_space_mb,
-                                                     blob_size_mb + worker.locked_space_mb, worker.last_heartbeat_epoch_ts);
-        Logger::info("Updating worker ", worker.worker_address);
-        if (!db->updateWorkerState(worker_state_dto)) {
-            Logger::error("Error while updating worker");
-            return grpc::Status::CANCELLED;
-        }
-    }
+            // Add blob copy to database with state "during creation"
+            const auto dto = BlobCopyDTO(request->blob_hash(), worker.worker_address, BLOB_STATUS_DURING_CREATION, blob_size_mb);
+            auto result = db->addBlobEntry(dto);
+            if (not result.has_value()) return result;
 
-    Logger::info("Happy ending");
-    return grpc::Status::OK;
+            // Update worker state to mark locked space
+            auto worker_state_dto = WorkerStateDTO(worker.worker_address,worker.available_space_mb,
+                                                         blob_size_mb + worker.locked_space_mb,
+                                                         worker.last_heartbeat_epoch_ts);
+            result = db->updateWorkerState(worker_state_dto);
+            if (not result.has_value()) return result;
+        }
+        return std::monostate();
+    })
+    .output<grpc::Status>(
+        [](auto _) { return grpc::Status::OK; },
+        [](auto err) { Logger::error(err.error_message()); return err; });
 }
 
 grpc::Status MasterServiceImpl::GetWorkerWithBlob(
     grpc::ServerContext* context,
     const master::GetWorkerWithBlobRequest* request,
     master::GetWorkerWithBlobResponse* response) {
-    Logger::info("GetWorkerWithBlob");
-    try {
-        auto rows = db->querySavedBlobByHash(request->blob_hash());
-        if (rows.empty()) {
-            // response->set_message("Error: Blob with requested ID doesn't exist");
-            Logger::error("Error: Blob with ID ", request->blob_hash(), " doesn't exist");
-            return grpc::Status::CANCELLED;
+    std::string blob_hash = request->blob_hash();
+    Logger::info("GetWorkerWithBlob with hash ", blob_hash);
+
+    return db->querySavedBlobByHash(request->blob_hash())
+    .and_then([&](auto blob_copies) -> Expected<BlobCopyDTO, grpc::Status> {
+        if (blob_copies.empty()) {
+            return grpc::Status(grpc::CANCELLED, "Error: Blob with requested hash doesn't exist");
         }
         // choose one of the copies
-        BlobCopyDTO &blobCopy = rows[0];
-        Logger::info("Blob found on ", rows.size(), " workers, choosing ", blobCopy.worker_address);
-        WorkerStateDTO workerState = db->getWorkerState(blobCopy.worker_address);
-        response->set_addresses(workerState.worker_address);
+        BlobCopyDTO &blob_copy = blob_copies[0];
+        Logger::info("Blob found on ", blob_copies.size(), " workers, choosing ", blob_copy.worker_address);
+        return blob_copy;
+    })
+    .and_then([&](auto blob_copy) -> Expected<WorkerStateDTO, grpc::Status> {
+        return db->getWorkerState(blob_copy.worker_address);
+    }).output<grpc::Status>([&](auto worker_state){
+        response->set_addresses(worker_state.worker_address);
         return grpc::Status::OK;
-    } catch (std::runtime_error& e) {
-        std::cerr << e.what();
-        return grpc::Status::CANCELLED;
-    }
+    }, [](auto err) { Logger::error(err.error_message()); return err; });
 }
 
 
@@ -92,44 +90,73 @@ grpc::Status MasterServiceImpl::NotifyBlobSaved(
     master::NotifyBlobSavedResponse* response)
 {
     Logger::info("NotifyBlobSaved ", request->blob_hash(), " ", request->worker_address());
-    auto blobDTOs = db->queryBlobByHashAndWorkerId(request->blob_hash(), request->worker_address());
-    if (blobDTOs.size() != 1) {
-        Logger::error("Wrong query result");
-        return grpc::Status::CANCELLED;
-    }
-    auto blobDTO = blobDTOs[0];
-    blobDTO.state = BLOB_STATUS_SAVED;
-    if (!db->updateBlobEntry(blobDTO)) {
-        Logger::error("Error when updating blob entry");
-        return grpc::Status::CANCELLED;
-    }
-    Logger::info("Getting worker state");
-    auto worker_state = db->getWorkerState(request->worker_address());
-    Logger::info("Got worker state");
-    worker_state.locked_space_mb -= blobDTO.size_mb;
-    worker_state.available_space_mb -= blobDTO.size_mb;
-    if (!db->updateWorkerState(worker_state))
-    {
-        Logger::error("Cannot update worker state");
-        return grpc::Status::CANCELLED;
-    }
-    return grpc::Status::OK;
+    return db->queryBlobByHashAndWorkerId(request->blob_hash(), request->worker_address())
+    .and_then([&](auto blob_dtos) -> Expected<BlobCopyDTO, grpc::Status> {
+        if (blob_dtos.size() != 1) {
+            return grpc::Status(grpc::CANCELLED, "Wrong query result");
+        }
+        auto blob = blob_dtos[0];
+        blob.state = BLOB_STATUS_SAVED;
+        return blob;
+    })
+    .and_then([&](auto blob) -> Expected<std::monostate, grpc::Status> {
+        auto update_blob_result = db->updateBlobEntry(blob);
+        if (not update_blob_result.has_value()) return update_blob_result;
+        auto result = db->getWorkerState(request->worker_address());
+        if (not result.has_value()) return result.error();
+        auto worker_state = result.value();
+        worker_state.locked_space_mb -= blob.size_mb;
+        worker_state.available_space_mb -= blob.size_mb;
+        return db->updateWorkerState(worker_state);
+    }).output<grpc::Status>([&](auto _){ return grpc::Status::OK; },
+        [](auto err) { Logger::error(err.error_message()); return err; });
 }
 
 grpc::Status MasterServiceImpl::RegisterWorker(grpc::ServerContext* context, const master::RegisterWorkerRequest* request, master::RegisterWorkerResponse* response)
 {
     Logger::info("RegisterWorker");
     // If there was a worker with the same address before then delete it (it must have been restarted)
-    if(!db->deleteWorkerState(request->address())) {
-        return grpc::Status::CANCELLED;
-    }
-    if(!db->deleteBlobEntriesByWorkerAddress(request->address())) {
-        return grpc::Status::CANCELLED;
-    }
+    return db->deleteWorkerState(request->address())
+    .and_then([&](auto _) -> Expected<std::monostate, grpc::Status> {
+        return db->deleteBlobEntriesByWorkerAddress(request->address());
+    })
+    .and_then([&](auto _) -> Expected<std::monostate, grpc::Status> {
+        auto worker_state = WorkerStateDTO(request->address(), request->space_available(), 0, 0);
+        return db->addWorkerState(worker_state);
+    }).output<grpc::Status>([&](auto _){ return grpc::Status::OK; },
+        [](auto err) { Logger::error(err.error_message()); return err; });
+}
 
-    auto worker_state = WorkerStateDTO(request->address(), request->space_available(), 0, 0);
-    if(!db->addWorkerState(worker_state)) {
-        return grpc::Status::CANCELLED;
+Expected<std::monostate, grpc::Status> requestWorkerToDeleteBlob(std::string blob_hash, std::string worker_address)
+{
+    const auto worker_channel = grpc::CreateChannel(worker_address, grpc::InsecureChannelCredentials());
+    const auto worker_stub = worker::WorkerService::NewStub(worker_channel);
+
+    worker::DeleteBlobRequest request;
+    worker::DeleteBlobResponse response;
+    grpc::ClientContext client_context;
+
+    request.set_blob_hash(blob_hash);
+
+    auto status = worker_stub->DeleteBlob(&client_context, request, &response);
+    if (not status.ok())
+    {
+        Logger::warn("Unsuccessful attempt to delete blob ", blob_hash, " in worker ", worker_address);
     }
-    return grpc::Status::OK;
+}
+
+grpc::Status MasterServiceImpl::DeleteBlob(grpc::ServerContext* context, const master::DeleteBlobRequest* request, master::DeleteBlobResponse* response)
+{
+    Logger::info("DeleteBlob");
+    return db->querySavedBlobByHash(request->blob_hash())
+    .and_then([&](auto blob_copies) -> Expected<std::monostate, grpc::Status> {
+        for (const auto& blob_copy : blob_copies)
+        {
+            // We ignore errors from workers, if one of them doesn't delete blob we should still return a success
+            requestWorkerToDeleteBlob(blob_copy.hash, blob_copy.worker_address);
+        }
+        return db->deleteBlobEntryByHash(request->blob_hash());
+    }).output<grpc::Status>([&](auto _){ return grpc::Status::OK; },
+        [](auto err) { Logger::error(err.error_message()); return err; });
+
 }
