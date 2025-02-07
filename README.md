@@ -2,74 +2,73 @@
 Design doc: https://docs.google.com/document/d/1bGVrjKyt-A_iQEfeR2zDWv8M_Ba6Xc5BvzLR6KGmDzg/edit?usp=sharing
 
 ## Docker
-Instalacja:
+Installation:
 https://docs.docker.com/engine/install/ubuntu/
-Żeby nie wpisywać sudo za każdym razem:
+To avoid typing sudo every time:
 https://www.digitalocean.com/community/questions/how-to-fix-docker-got-permission-denied-while-trying-to-connect-to-the-docker-daemon-socket
-oraz to:
+and this:
 `sudo setfacl --modify user:<user name or ID>:rw /var/run/docker.sock`
 
-Gdy mamy już docker to należy zbudować obraz deweloperski, jest skrypt dev.sh
+Once we have docker, we need to build a development image, there is a script dev.sh
 `./dev.sh buid-image`
-Może to zająć nawet >10 minut za pierwszym razem (instaluje wszystkie dependencies)
+This may take >10 minutes the first time (installs all dependencies)
 
-## Konfiguracja IDE
-W Clionie należy wejść w settings->Build,Execution,Deployment->Toolchains
-i stwrozyć nowy toolchain Docker. Wybrać obraz blob-store, Container settings -> volumes i tutaj dodać dwie wartości:
+## IDE configuration
+In Clion, go to settings->Build,Execution,Deployment->Toolchains
+and create a new Docker toolchain. Select the blob-store image, Container settings -> volumes and add two values ​​here:
 
-host: \<nasz scieżka do projektu\>/blob-store
+host: \<our project path\>/blob-store
 container: /usr/src/app
 
-host: \<nasza scieżka do projektu\>/blob-store/build
+host: \<our project path\>/blob-store/build
 container: /usr/src/app/build
 
-Reszta ustawień defaultowa.
+The rest of the settings are default.
 
-Następnie wejść w settings->Build,Execution,Deployment->CMake zmodyfikować profil. 
-Wybrać dla niego toolchain: nasz docker i dodać opcje CMake:
+Then go to settings->Build,Execution,Deployment->CMake and modify the profile.
+
+Select the toolchain for it: our docker and add CMake options:
+
 `-B build -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake`
 
-Żeby sprawdzić czy wszystko działa to 
-1. Reload CMake Project w IDE
-2. Wejść w src/master/main.cpp
-3. Zbuildować go za pomocą IDE (lub uruchomić)
-4. Po tych krokach IDE nie powinno podświetlać niczego na czerwono w kodzie, a program powinien się uruchamiać.
+To check if everything works,
+
+1. Reload CMake Project in the IDE
+2. Go to src/master/main.cpp
+3. Build it using the IDE (or run it)
+4. After these steps, the IDE should not highlight anything in red in the code, and the program should start.
 
 ## Kubernetes
-### Nasz config:
-- klaster z blob-store: `blobs-cluster` region: `europe-central2`
-- klaster z image registry: `europe-central2-docker.pkg.dev`
+### Our config:
+- cluster from blob-store: `blobs-cluster` region: `europe-central2`
+- cluster from image registry: `europe-central2-docker.pkg.dev`
 - registry image repo: `europe-central2-docker.pkg.dev/blobs69/blob-repository`
-- nazwa dockerimage: `blob-store` (tag: `latest` albo `v1.0.70`)
-- uprawnienia do google-cloud-api's z poziomu poda: https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#kubernetes-sa-to-iam
-### Na początku
+- dockerimage name: `blob-store` (tag: `latest` or `v1.0.70`)
+- permissions to google-cloud-api's from the pod: https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#kubernetes-sa-to-iam
+### At the beginning
 ```
 gcloud auth configure-docker europe-central2-docker.pkg.dev
 gcloud container clusters get-credentials blobs-cluster --region europe-central2
 
-kubectl get pods # powinno działać
-``` 
+kubectl get pods # should work
+```
 
-### Po wprowadzeniu zmian
-1. Po wprowadzeniu zmian build i push do registry (Local - CLion):
-   ```
-   ./dev.sh push-docker
-   ```
-2. Reloadowanie wszystkiego (GCloud):
-   ```
-   kubectl delete all --all
-   ```
-3. Stawianie mastera (GCloud):
-   ```
-   cd /path/to/k8s/configs # można pobrać z repo 
-   kubectl apply -f master.yaml
-   ```
-4. Poczekać chwilę i odpalić resztę:
-   ```
-   kubectl apply -f frontend.yaml
-   kubectl apply -f worker.yaml
-   ```
+### After making changes
+1. After making changes build and push to registry (Local - CLion):
+```
+./dev.sh push-docker
+```
+2. Reloading everything (GCloud):
+```
+kubectl delete all --all
+```
+3. Deployment (GCloud):
+```
+cd /path/to/k8s/configs # can be downloaded from repo
+kubectl apply -f master.yaml
+kubectl apply -f frontend.yaml
+kubectl apply -f worker.yaml
+```
 
-## Sukces
+## Success
 ![image](https://github.com/user-attachments/assets/35993753-22b2-4959-927f-2cd596f95162)
-
